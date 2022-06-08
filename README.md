@@ -1,11 +1,5 @@
 A [Slack](https://slack.com) vote bot.
 
-## Installation
-
-
-```
-pip install -r requirements.txt
-```
 
 ## Usage
 
@@ -53,7 +47,7 @@ python manage.py runserver
 ### Configure base URL
 You need login to [spack api panel](https://api.slack.com/apps) and change base url for endpoints. 
 Change base url in categories. You can use Ngrok to generate url for tests. 
-
+![alt text](https://github.com/codilime/VoteBot/blob/r_buczynski/slack%201.png)
 
 
 ### Endpoints for Slash Commands
