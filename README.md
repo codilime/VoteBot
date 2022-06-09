@@ -37,9 +37,6 @@ You can find the token in the Basic Information tab.
 ### Setup - type in terminal
 
 ```commandline
-git clone https://github.com/codilime/VoteBot.git
-py manage.py -m venv venv  
-cd .\venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py makemigrations
 python manage.py migrate
