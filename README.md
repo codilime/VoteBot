@@ -8,8 +8,9 @@ A [Slack](https://slack.com) vote bot.
 First you need to get the slack api token for your bot. You have two options:
 
 1. If you use a [bot user integration](https://api.slack.com/bot-users) of slack, you can get the api token on the integration page.
-2. If you use a real slack user, you can generate an api token on [slack web api page](https://api.slack.com/web).
+2. If you use a real slack user, you can generate an api token on [slack web api page](https://api.slack.com/web). You can find the token in the Basic Information tab.
 
+![alt text](https://github.com/codilime/VoteBot/blob/r_buczynski/slack%202.png)
 
 ### Configure the bot
 First create a `.env` file in your own instance of slackbot.
@@ -28,7 +29,7 @@ SLACK_VERIFICATION_TOKEN=<your-slack-verification-token>
 ```
 
 
-#### Setup - type in terminal
+### Setup - type in terminal
 
 ```commandline
 git clone https://github.com/codilime/VoteBot.git
@@ -58,6 +59,8 @@ Change base url in categories. You can use Ngrok to generate url for tests.
     /check-points - Type '/check-points' to know how many points you have received.
     /check-winner-month - Type '/check-winner-month' to know who win award program in current month.
 ```
+You can manage slash method in the Slash Commands tab.
+![alt text](https://github.com/codilime/VoteBot/blob/r_buczynski/slack%203.png)
 
 
 ### Endpoints for Event Subscriptions
@@ -68,6 +71,10 @@ Change base url in categories. You can use Ngrok to generate url for tests.
     Your app can subscribe to be notified of events in Slack (for example, 
     when a user adds a reaction or creates a file) at a URL you choose.
 ```
+Remember to enable events on slack api page.
+![alt text](https://github.com/codilime/VoteBot/blob/r_buczynski/slack%204.png)
+
+
 ### Endpoints for Interactivity & Shortcuts
 ```commandline
     /interactive - Interactivity - Any interactions with shortcuts, 
@@ -75,7 +82,13 @@ Change base url in categories. You can use Ngrok to generate url for tests.
     will be sent to a URL you specify.
 ```
 
+
 ### Sending reminders
+The application automatically sends voting reminders in the middle and on the last day of the month.
+send_reminder
+
+On the first day of each month, information about the voting results in the previous month is sent.
+
 ```commandline
 
 ```

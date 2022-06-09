@@ -81,8 +81,6 @@ async def send_winners_message():
 try:
     logger.info('Sending voting results.')
     loop_send_winners_message = asyncio.get_event_loop()
-
-    """"""
 #     loop_send_winners_message.run_until_complete(send_winners_message())
 
 except Exception as e:
@@ -145,36 +143,4 @@ except Exception as e:
 ##################################################################################
 
 
-"""Pierwszego dnia miesiąca podsumowanie głosów - wysłanie na główny kanał"""
 
-#
-# async def send_as_schedule():
-#     while True:
-#         time_delta = timedelta(seconds=10)
-#         started = datetime.now() + timedelta(seconds=100)
-#         send = started + time_delta
-#         scheduled_time = started.time()
-#         schedule_timestamp = datetime.combine(send, scheduled_time).strftime('%s')
-#
-#         channel_id = "U03BKQMSU5D"
-#
-#         sleep = 15
-#         try:
-#             result = CLIENT.chat_scheduleMessage(
-#                 channel=channel_id,
-#                 text=f"Looking towards the future started: {started}, sendet: {send}, ",
-#                 post_at=schedule_timestamp
-#             )
-#             await asyncio.sleep(sleep)
-#             started = send
-#         except SlackApiError as e:
-#             print(e)
-#         except KeyboardInterrupt:
-#             pass
-
-# loop = asyncio.get_event_loop()
-# try:
-#     asyncio.ensure_future(send_as_schedule())
-#     loop.run_forever()
-# except Exception as e:
-#     print(e)
