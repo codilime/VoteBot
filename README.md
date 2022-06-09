@@ -111,8 +111,6 @@ python manage.py createsuperuser
 Then open /admin/ in your browser and log in.
 You can manage all data in builtin panel. 
 
-You can insert test data from fixtures directory. 
-
 You can serialize your data to protect against data loss. 
 To do this type in terminal
 ```commandline
@@ -122,3 +120,12 @@ python manage.py dumpdata bot_app.VotingResults --indent 2 --output bot_app/fixt
 ```
 
 You can insert test data from fixtures directory. 
+```commandline
+python manage.py check
+python manage.py makemigrations
+python manage.py migrate
+python manage.py loaddata slack_profile.json
+python manage.py loaddata slack_user.json
+python manage.py loaddata voting_results.json
+```
+
