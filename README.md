@@ -8,9 +8,12 @@ A [Slack](https://slack.com) vote bot.
 First you need to get the slack api token for your bot. You have two options:
 
 1. If you use a [bot user integration](https://api.slack.com/bot-users) of slack, you can get the api token on the integration page.
-2. If you use a real slack user, you can generate an api token on [slack web api page](https://api.slack.com/web). You can find the token in the Basic Information tab.
+2. If you use a real slack user, you can generate an api token on [slack web api page](https://api.slack.com/web).
 
-![alt text](https://github.com/codilime/VoteBot/blob/main/slack%202.png)
+
+### Testing area
+You can use our chanel for [testing bot](https://join.slack.com/t/programwyrniebot/shared_invite/zt-1ac7mt2iu-1VCqoLW6sHnave~Jur8AeQ).
+
 
 ### Configure the bot
 First create a `.env` file in your own instance of slackbot.
@@ -27,7 +30,9 @@ SLACK_BOT_TOKEN=<your-slack-token>
 SIGNING_SECRET=<your-key>
 SLACK_VERIFICATION_TOKEN=<your-slack-verification-token>
 ```
+You can find the token in the Basic Information tab.
 
+![alt text](https://github.com/codilime/VoteBot/blob/main/slack%202.png)
 
 ### Setup - type in terminal
 
@@ -89,9 +94,31 @@ send_reminder
 
 On the first day of each month, information about the voting results in the previous month is sent.
 
-```commandline
 
+### Database
+After the migration is prepared and performed, the database with tables is ready.
+These commands prepared the database.
+```commandline
+python manage.py makemigrations
+python manage.py migrate
 ```
 
-### Testing area
-You can use our chanel for [testing bot](https://join.slack.com/t/programwyrniebot/shared_invite/zt-1ac7mt2iu-1VCqoLW6sHnave~Jur8AeQ).
+You can use admin panel to manage data.
+To do this, create a user in the terminal.
+```commandline
+python manage.py createsuperuser
+```
+Then open /admin/ in your browser and log in.
+You can manage all data in builtin panel. 
+
+You can insert test data from fixtures directory. 
+
+You can serialize your data to protect against data loss. 
+To do this type in terminal
+```commandline
+python manage.py dumpdata bot_app.SlackProfile --indent 2 --output bot_app/fixtures/slack_profile.json
+python manage.py dumpdata bot_app.SlackUser --indent 2 --output bot_app/fixtures/slack_user.json
+python manage.py dumpdata bot_app.VotingResults --indent 2 --output bot_app/fixtures/voting_results.json
+```
+
+You can insert test data from fixtures directory. 
