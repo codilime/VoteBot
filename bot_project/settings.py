@@ -1,7 +1,7 @@
 import os
-import dotenv
 from pathlib import Path
-import slack_sdk
+
+import dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_file = os.path.join(BASE_DIR, ".env")
@@ -10,12 +10,9 @@ if os.path.isfile(dotenv_file):
 
 SECRET_KEY = os.environ.get("SECRET_KEY", default="KEY")
 
-
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SIGNING_SECRET = os.environ.get("SIGNING_SECRET")
 SLACK_VERIFICATION_TOKEN = os.environ.get("SLACK_VERIFICATION_TOKEN")
-
-CLIENT = slack_sdk.WebClient(token=SLACK_BOT_TOKEN)
 
 ALLOWED_HOSTS = ['*']
 
@@ -66,7 +63,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'bot_project.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
@@ -100,9 +96,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 STATIC_URL = 'static/'
-
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

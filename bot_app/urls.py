@@ -10,8 +10,6 @@ from .slash import (
     about,
 )
 
-app_name = "bot_app"
-
 urlpatterns = [
     path("event/hook/", slack_events, name="slack_events"),
     path("about", about, name="about"),

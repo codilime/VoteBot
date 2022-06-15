@@ -1,11 +1,9 @@
 """Module contain methods for scraping users and save this data in db"""
 import json
-from django.conf import settings
 
+from bot_app.utils import get_slack_client
 from .models import SlackProfile, SlackUser
 
-
-CLIENT = settings.CLIENT
 users_store = {}
 
 
@@ -25,7 +23,8 @@ def save_users_to_json_file() -> None:
     """
     try:
         """Connect to the slack API to get the user list."""
-        result = CLIENT.users_list()
+        client = get_slack_client()
+        result = client.users_list()
         save_users(result["members"])
 
         """Create json data."""
@@ -47,7 +46,8 @@ def create_users_from_slack() -> None:
     """
     try:
         """Connect to the slack API to get the user list."""
-        result = CLIENT.users_list()
+        client = get_slack_client()
+        result = client.users_list()
         save_users(result["members"])
 
         for user, attributes in users_store.items():
@@ -106,21 +106,6 @@ def create_users_from_slack() -> None:
                 print(
                     f"User {attributes['real_name']} exists in database. I skip adding."
                 )
-    except Exception as error:
-        print(error)
-
-
-def get_users():
-    """Get data about users saved in the database."""
-    users = SlackUser.objects.all()
-    return users
-
-
-def get_user(slack_id: str):
-    """Get data about user saved in the database."""
-    try:
-        user = SlackUser.objects.get(slack_id=slack_id)
-        return user
     except Exception as error:
         print(error)
 

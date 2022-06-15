@@ -1,16 +1,14 @@
 import json
 import string
-from django.conf import settings
-from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse, Http404
+
 from django.core.exceptions import PermissionDenied
-from .message import DialogWidow
+from django.http import HttpResponse, Http404
+from django.views.decorators.csrf import csrf_exempt
+
+from bot_app.utils import get_slack_client, get_user
 from .adapter_slackclient import slack_events_adapter, SLACK_VERIFICATION_TOKEN
-from .scrap_users import get_user
+from .message import DialogWidow
 
-
-CLIENT = settings.CLIENT
-BOT_ID = CLIENT.api_call("auth.test")["user_id"]
 WORDS_SEARCHED = ["program", "wyróżnień", "wyroznien"]
 
 info_channels = {}
@@ -18,6 +16,7 @@ info_channels = {}
 
 def send_info(channel, user):
     """Send info about awards program."""
+    client = get_slack_client()
     if channel not in info_channels:
         info_channels[channel] = {}
     if user in info_channels[channel]:
@@ -26,7 +25,7 @@ def send_info(channel, user):
     name = f"*Cześć {get_user(user).name.split('.')[0].capitalize()}.*\n"
     info = DialogWidow(channel)
     message = info.about_message(name=name)
-    response = CLIENT.chat_postMessage(**message, text="pw_bot")
+    response = client.post_chat_message(message, text="pw_bot")
     info.timestamp = response["ts"]
     info_channels[channel][user] = info
 
@@ -51,11 +50,13 @@ def message(payload: json):
     user_id = event.get("user")
     text = event.get("text")
 
-    if user_id != BOT_ID:
+    client = get_slack_client()
+    if user_id != client.bot_id:
         if check_if_searched_words(text.lower()):
             text = "Informacje o pragramie wyróżnień prześlę Ci na pw. Sprawdź swoją skrzynkę."
             ts = event.get("ts")
-            CLIENT.chat_postMessage(channel=channel_id, thread_ts=ts, text=text)
+            msg = dict(channel=channel_id, thread_ts=ts)
+            client.post_chat_message(msg, text=text)
             send_info(f"@{user_id}", user_id)
 
 

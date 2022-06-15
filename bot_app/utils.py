@@ -1,16 +1,38 @@
-import datetime
 import calendar
+import datetime
 import logging
 
 import pytz
+from django.apps import apps
 from django.db.models import Sum
-from .models import VotingResults
-from .scrap_users import get_user, get_users
+
+from bot_app.apps import BotAppConfig
+from bot_app.client import SlackClient
+from .models import VotingResults, SlackUser
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 CATEGORIES = ["Team up to win", "Act to deliver", "Disrupt to grow"]
+
+
+def get_slack_client() -> SlackClient:
+    return apps.get_app_config(BotAppConfig.name).slack_client
+
+
+def get_users():
+    """Get data about users saved in the database."""
+    users = SlackUser.objects.all()
+    return users
+
+
+def get_user(slack_id: str):
+    """Get data about user saved in the database."""
+    try:
+        user = SlackUser.objects.get(slack_id=slack_id)
+        return user
+    except Exception as error:
+        print(error)
 
 
 def calculate_points(voted_user, start: datetime, end: datetime) -> dict:
@@ -174,7 +196,7 @@ def error_message(voting_results: dict, voting_user_id: str) -> str:
     """
     text = ""
     if not validate_votes_himself(
-        voting_results=voting_results, voting_user_id=voting_user_id
+            voting_results=voting_results, voting_user_id=voting_user_id
     ):
         text += "You cannot vote for yourself.\n"
     if not validate_points_amount(voting_results=voting_results):
@@ -263,6 +285,7 @@ def prepare_data(request):
     logger.info('prepare_data')
     decode_data = request.body.decode("utf-8")
 
+    # TODO urldecode?
     data = {}
     try:
         logger.info('Preparing data.')

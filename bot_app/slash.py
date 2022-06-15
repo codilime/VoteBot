@@ -4,15 +4,12 @@ support voting in the award program.
 """
 import json
 import logging
-from django.conf import settings
-from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse, Http404
-from django.core.exceptions import PermissionDenied
 
-from .adapter_slackclient import slack_events_adapter, SLACK_VERIFICATION_TOKEN
-from .message import DialogWidow
-from .scrap_users import get_user
-from .utils import (
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+
+from bot_app.message import DialogWidow
+from bot_app.utils import (
     calculate_points,
     create_text,
     prepare_data,
@@ -22,13 +19,12 @@ from .utils import (
     get_start_end_month,
     winner,
     get_name,
+    get_slack_client, get_user
 )
 
-CLIENT = settings.CLIENT
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
-BOT_ID = CLIENT.api_call("auth.test")["user_id"]
 CATEGORIES = ["Team up to win", "Act to deliver", "Disrupt to grow"]
 info_channels = {}
 
@@ -53,7 +49,8 @@ def vote(request):
         message = vote_form.vote_message()
         logger.info('Message has been created.')
 
-        response = CLIENT.views_open(trigger_id=trigger_id, view=message)
+        client = get_slack_client()
+        response = client.open_view(trigger_id=trigger_id, view=message)
         logger.info('The message has been sent successfully.')
         logger.info('=' * 30)
         return HttpResponse(status=200)
@@ -66,6 +63,7 @@ def interactive(request):
     The method handles the submitted voting form.
     Saves data in the database and sends the user information about the vote.
     """
+    # TODO validate token
     logger.info('=' * 30)
     logger.info('interactive')
     if request.method == "POST":
@@ -117,12 +115,13 @@ def interactive(request):
         response_message = DialogWidow(channel=voting_user_id)
         logger.info('Dialog window has been created.')
         name = get_name(voting_user_id=voting_user_id)
+        client = get_slack_client()
 
         try:
             if not validate(voting_results=voting_results, voting_user_id=voting_user_id):
                 text = error_message(voting_results, voting_user_id)
                 message = response_message.check_points_message(name=name, text=text)
-                response = CLIENT.chat_postMessage(**message, text="Check your votes.")
+                response = client.post_chat_message(message, text="Check your votes.")
                 logger.info(f'Error message has been sent successfully. Text: {text}')
                 logger.info('=' * 30)
                 return HttpResponse(status=200)
@@ -138,7 +137,7 @@ def interactive(request):
                 message = response_message.check_points_message(name=name, text=text)
                 logger.info(f'Message has been created. Text: {text}')
 
-                response = CLIENT.chat_postMessage(**message, text="Check your votes.")
+                response = client.post_chat_message(message, text="Check your votes.")
                 logger.info('Information about the voting result has been successfully sent.')
                 logger.info('=' * 30)
                 return HttpResponse(status=200)
@@ -172,7 +171,8 @@ def check_votes(request):
             message = response_message.check_points_message(name=name, text=text)
             logger.info('Message has been created.')
 
-            CLIENT.chat_postMessage(**message, text="Check your votes.")
+            client = get_slack_client()
+            client.post_chat_message(message, text="Check your votes.")
             logger.info('The message has been sent successfully.')
             return HttpResponse(status=200)
         except Exception as e:
@@ -210,7 +210,8 @@ def check_points(request):
         message = points_message.check_points_message(name=name, text=text)
         logger.info('Message has been created.')
 
-        CLIENT.chat_postMessage(**message, text="Check the points you get in current month")
+        client = get_slack_client()
+        client.post_chat_message(message, text="Check the points you get in current month")
         logger.info('The message has been sent successfully.')
         logger.info('=' * 30)
 
@@ -244,7 +245,8 @@ def check_winner_month(request):
         message = message.check_points_message(name=name, text=text)
         logger.info('Message has been created.')
 
-        CLIENT.chat_postMessage(**message, text="Check winner month.")
+        client = get_slack_client()
+        client.post_chat_message(message, text="Check winner month.")
         logger.info('The message has been sent successfully.')
         logger.info('=' * 30)
         return HttpResponse(status=200)
@@ -271,7 +273,8 @@ def about(request):
         message = info_message.about_message(name)
         logger.info('Message has been created.')
 
-        CLIENT.chat_postMessage(**message, text="See information about award program")
+        client = get_slack_client()
+        client.post_chat_message(message, text="See information about award program")
         logger.info('The message has been sent successfully.')
 
         logger.info('=' * 30)
@@ -301,41 +304,40 @@ def render_json_response(request, data, status=None, support_jsonp=False):
         )
     return response
 
-
-@csrf_exempt
-def slack_events(
-    request, *args, **kwargs
-):  # cf. https://api.slack.com/events/url_verification
-    # logging.info(request.method)
-    if request.method == "GET":
-        raise Http404("These are not the slackbots you're looking for.")
-
-    try:
-        # https://stackoverflow.com/questions/29780060/trying-to-parse-request-body-from-post-in-django
-        event_data = json.loads(request.body.decode("utf-8"))
-    except ValueError as e:  # https://stackoverflow.com/questions/4097461/python-valueerror-error-message
-        return HttpResponse("")
-
-    # Echo the URL verification challenge code
-    if "challenge" in event_data:
-        return render_json_response(request, {"challenge": event_data["challenge"]})
-
-    # Parse the Event payload and emit the event to the event listener
-    if "event" in event_data:
-        # Verify the request token
-        request_token = event_data["token"]
-        if request_token != SLACK_VERIFICATION_TOKEN:
-            slack_events_adapter.emit("error", "invalid verification token")
-            message = (
-                "Request contains invalid Slack verification token: %s\n"
-                "Slack adapter has: %s" % (request_token, SLACK_VERIFICATION_TOKEN)
-            )
-            raise PermissionDenied(message)
-
-        event_type = event_data["event"]["type"]
-        slack_events_adapter.emit(event_type, event_data)
-        return HttpResponse("")
-
-    # default case
-    return HttpResponse("")
-
+# TODO duplicate events.py code?
+# @csrf_exempt
+# def slack_events(
+#     request, *args, **kwargs
+# ):  # cf. https://api.slack.com/events/url_verification
+#     # logging.info(request.method)
+#     if request.method == "GET":
+#         raise Http404("These are not the slackbots you're looking for.")
+#
+#     try:
+#         # https://stackoverflow.com/questions/29780060/trying-to-parse-request-body-from-post-in-django
+#         event_data = json.loads(request.body.decode("utf-8"))
+#     except ValueError as e:  # https://stackoverflow.com/questions/4097461/python-valueerror-error-message
+#         return HttpResponse("")
+#
+#     # Echo the URL verification challenge code
+#     if "challenge" in event_data:
+#         return render_json_response(request, {"challenge": event_data["challenge"]})
+#
+#     # Parse the Event payload and emit the event to the event listener
+#     if "event" in event_data:
+#         # Verify the request token
+#         request_token = event_data["token"]
+#         if request_token != SLACK_VERIFICATION_TOKEN:
+#             slack_events_adapter.emit("error", "invalid verification token")
+#             message = (
+#                 "Request contains invalid Slack verification token: %s\n"
+#                 "Slack adapter has: %s" % (request_token, SLACK_VERIFICATION_TOKEN)
+#             )
+#             raise PermissionDenied(message)
+#
+#         event_type = event_data["event"]["type"]
+#         slack_events_adapter.emit(event_type, event_data)
+#         return HttpResponse("")
+#
+#     # default case
+#     return HttpResponse("")
