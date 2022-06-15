@@ -5,7 +5,7 @@ support voting in the award program.
 import json
 import logging
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseNotAllowed
 from django.views.decorators.csrf import csrf_exempt
 
 from bot_app.message import DialogWidow
@@ -34,27 +34,21 @@ def vote(request):
     """Supports the slash method - '/vote'.
     Sends the voting form to the user.
     """
-    logger.info('=' * 30)
-    logger.info(f'vote')
-    if request.method == "POST":
-        data = prepare_data(request=request)
-        logger.info('Data was decode successfully.')
+    if request.method != "POST":
+        return HttpResponseNotAllowed(['POST'], f"{request.method} is not allowed")
 
-        user_id = data.get("user_id")
-        trigger_id = data["trigger_id"]
+    # TODO validate token
 
-        vote_form = DialogWidow(channel=user_id)
-        logger.info('Dialog window has been created.')
+    data = prepare_data(request=request)
+    user_id = data.get("user_id")
+    trigger_id = data["trigger_id"]
 
-        message = vote_form.vote_message()
-        logger.info('Message has been created.')
+    vote_form = DialogWidow(channel=user_id)
+    message = vote_form.vote_message()
 
-        client = get_slack_client()
-        response = client.open_view(trigger_id=trigger_id, view=message)
-        logger.info('The message has been sent successfully.')
-        logger.info('=' * 30)
-        return HttpResponse(status=200)
-    logger.error('Method POST not received.')
+    client = get_slack_client()
+    client.open_view(trigger_id=trigger_id, view=message)
+    return HttpResponse(status=200)
 
 
 @csrf_exempt
@@ -63,7 +57,11 @@ def interactive(request):
     The method handles the submitted voting form.
     Saves data in the database and sends the user information about the vote.
     """
+    if request.method != "POST":
+        return HttpResponseNotAllowed(['POST'], f"{request.method} is not allowed")
+
     # TODO validate token
+
     logger.info('=' * 30)
     logger.info('interactive')
     if request.method == "POST":
@@ -153,31 +151,26 @@ def check_votes(request):
     @param request
     @return:
     """
-    logger.info('=' * 30)
-    logger.info('check_votes')
-    if request.method == "POST":
-        data = prepare_data(request=request)
-        logger.info('Data was decode successfully.')
+    if request.method != "POST":
+        return HttpResponseNotAllowed(['POST'], f"{request.method} is not allowed")
 
-        voting_user_id = data.get("user_id")
+    # TODO validate token
 
-        try:
-            text = create_text(voting_user_id=voting_user_id)
+    data = prepare_data(request=request)
+    voting_user_id = data.get("user_id")
 
-            name = get_name(voting_user_id=voting_user_id)
-            response_message = DialogWidow(channel=voting_user_id)
-            logger.info('Dialog window has been created.')
+    try:
+        text = create_text(voting_user_id=voting_user_id)
 
-            message = response_message.check_points_message(name=name, text=text)
-            logger.info('Message has been created.')
+        name = get_name(voting_user_id=voting_user_id)
+        response_message = DialogWidow(channel=voting_user_id)
+        message = response_message.check_points_message(name=name, text=text)
 
-            client = get_slack_client()
-            client.post_chat_message(message, text="Check your votes.")
-            logger.info('The message has been sent successfully.')
-            return HttpResponse(status=200)
-        except Exception as e:
-            logger.error(f'{e}')
-    logger.error('Method POST not received.')
+        client = get_slack_client()
+        client.post_chat_message(message, text="Check your votes.")
+        return HttpResponse(status=200)
+    except Exception as e:
+        logger.error(f'{e}')
 
 
 @csrf_exempt
@@ -186,6 +179,11 @@ def check_points(request):
     @param: request
     @return:
     """
+    if request.method != "POST":
+        return HttpResponseNotAllowed(['POST'], f"{request.method} is not allowed")
+
+    # TODO validate token
+
     logger.info('=' * 30)
     logger.info('check_points')
     data = prepare_data(request=request)
@@ -227,6 +225,11 @@ def check_winner_month(request):
     @param: request
     @return:
     """
+    if request.method != "POST":
+        return HttpResponseNotAllowed(['POST'], f"{request.method} is not allowed")
+
+    # TODO validate token
+
     logger.info('=' * 30)
     logger.info('check_winner_month')
 
@@ -260,6 +263,11 @@ def about(request):
     """Supports the slash method - '/about'.
     Send message with information about award program.
     """
+    if request.method != "POST":
+        return HttpResponseNotAllowed(['POST'], f"{request.method} is not allowed")
+
+    # TODO validate token
+
     logger.info('=' * 30)
     logger.info('about')
     data = prepare_data(request=request)
@@ -285,26 +293,27 @@ def about(request):
         logger.info('=' * 30)
 
 
-def render_json_response(request, data, status=None, support_jsonp=False):
-    json_str = json.dumps(data, ensure_ascii=False, indent=2)
-    callback = request.GET.get("callback")
-    if not callback:
-        callback = request.POST.get("callback")  # in case of POST and JSONP
-
-    if callback and support_jsonp:
-        json_str = "%s(%s)" % (callback, json_str)
-        response = HttpResponse(
-            json_str,
-            content_type="application/javascript; charset=UTF-8",
-            status=status,
-        )
-    else:
-        response = HttpResponse(
-            json_str, content_type="application/json; charset=UTF-8", status=status
-        )
-    return response
-
 # TODO duplicate events.py code?
+# def render_json_response(request, data, status=None, support_jsonp=False):
+#     json_str = json.dumps(data, ensure_ascii=False, indent=2)
+#     callback = request.GET.get("callback")
+#     if not callback:
+#         callback = request.POST.get("callback")  # in case of POST and JSONP
+#
+#     if callback and support_jsonp:
+#         json_str = "%s(%s)" % (callback, json_str)
+#         response = HttpResponse(
+#             json_str,
+#             content_type="application/javascript; charset=UTF-8",
+#             status=status,
+#         )
+#     else:
+#         response = HttpResponse(
+#             json_str, content_type="application/json; charset=UTF-8", status=status
+#         )
+#     return response
+#
+#
 # @csrf_exempt
 # def slack_events(
 #     request, *args, **kwargs

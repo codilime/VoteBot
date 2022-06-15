@@ -70,3 +70,41 @@ class TestEventEndpoint(TestCase):
         args = call_args[1][1]
         assert args['channel'] == f'@{self.slack_user1.slack_id}'
         assert "Lorem Ipsum" in str(args["blocks"])  # TODO move to common var
+
+    def test_invalid_data(self) -> None:
+        data = 'This is not a json.'
+
+        response = self.client.post(
+            self.url,
+            data=data,
+            content_type="application/json",
+        )
+        assert response.status_code == 400
+
+    @mock.patch('bot_app.events.SLACK_VERIFICATION_TOKEN', token)
+    def test_invalid_token(self):
+        event_data = {
+            'token': 'definitely_not_a_valid_token',
+            'event': {},
+        }
+
+        response = self.client.post(
+            self.url,
+            data=json.dumps(event_data),
+            content_type="application/json",
+        )
+        assert response.status_code == 403
+
+    @mock.patch('bot_app.events.SLACK_VERIFICATION_TOKEN', token)
+    def test_invalid_event(self):
+        event_data = {
+            'token': self.token,
+            'not_an_event': True,
+        }
+
+        response = self.client.post(
+            self.url,
+            data=json.dumps(event_data),
+            content_type="application/json",
+        )
+        assert response.status_code == 400

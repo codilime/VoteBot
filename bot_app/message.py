@@ -211,6 +211,7 @@ class DialogWidow:
             self.DIVIDER,
         )
 
+    # TODO: not used anywhere?
     def _get_reaction_task(self):
         checkmark = ":white_check_mark:"
         if not self.completed:
