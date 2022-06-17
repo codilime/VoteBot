@@ -8,12 +8,17 @@ from django.db.models import Sum
 
 from bot_app.apps import BotAppConfig
 from bot_app.client import SlackClient
+from bot_app.texts import texts
 from .models import VotingResults, SlackUser
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
-CATEGORIES = ["Team up to win", "Act to deliver", "Disrupt to grow"]
+CATEGORIES = {
+    'points_team_up_to_win': "Team up to win",
+    "points_act_to_deliver": "Act to deliver",
+    "points_disrupt_to_grow": "Disrupt to grow",
+}
 
 
 def get_slack_client() -> SlackClient:
@@ -89,7 +94,7 @@ def total_points(start: datetime, end: datetime) -> dict:
     return points
 
 
-def winner(start: datetime, end: datetime) -> str:
+def get_winners_message(start: datetime, end: datetime) -> str:
     """Find the winners in each category for current month or all time.
     Enter input params ts_start and ts_end for searching in time range.
     You can use 'get_start_end_month' method to create ts_start and ts_end parameters for searching in current month.
@@ -98,29 +103,15 @@ def winner(start: datetime, end: datetime) -> str:
     @rtype: str
     @return: message contain information about winners
     """
-    logger.info('=' * 30)
-    logger.info(f'winner')
-    """Collect data form database."""
     users_points = total_points(start=start, end=end)
-    attributes = (
-        "points_team_up_to_win",
-        "points_act_to_deliver",
-        "points_disrupt_to_grow",
-    )
-    winners, points = [], []
-    for attr in attributes:
-        winn = max(users_points, key=lambda v: users_points[v][attr])
-        winners.append(winn)
-        points.append(users_points[winn][attr])
 
-    """Create message."""
-    text = f"Wyniki głosowania w programie wyróżnień.\n"
-    for i in range(3):
-        text += (
-            f"W kategorii '{CATEGORIES[i]}' wygrywa '{get_user(winners[i]).name}', "
-            f"liczba głosów {points[i]}.\n"
-        )
-    return text
+    winners_data = []
+    for attr, category in CATEGORIES.items():
+        user = max(users_points, key=lambda v: users_points[v][attr])
+        points = users_points[user][attr]
+        user_name = get_user(user).profile.real_name
+        winners_data.append(dict(category=category, points=points, user=user_name))
+    return texts.announce_winners(values=winners_data)
 
 
 def get_start_end_day():
@@ -347,6 +338,7 @@ def get_name(voting_user_id):
     logging.info('Success.')
     logging.info('=' * 30)
     return name
+
 
 """
 1. Dodać logging

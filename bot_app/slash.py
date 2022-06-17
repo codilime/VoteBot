@@ -4,10 +4,10 @@ support voting in the award program.
 """
 import json
 import logging
-
+from bot_app.texts import texts
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.views.decorators.csrf import csrf_exempt
-
+from bot_app.utils import CATEGORIES
 from bot_app.message import DialogWidow
 from bot_app.utils import (
     calculate_points,
@@ -17,7 +17,7 @@ from bot_app.utils import (
     error_message,
     save_votes,
     get_start_end_month,
-    winner,
+    get_winners_message,
     get_name,
     get_slack_client, get_user
 )
@@ -25,7 +25,7 @@ from bot_app.utils import (
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
-CATEGORIES = ["Team up to win", "Act to deliver", "Disrupt to grow"]
+# CATEGORIES = ["Team up to win", "Act to deliver", "Disrupt to grow"]
 info_channels = {}
 
 
@@ -80,6 +80,7 @@ def interactive(request):
                     counter += 1
             logger.info('Block names were correctly retrieved.')
 
+            categories = list(CATEGORIES.keys())
             for counter, (block, values) in enumerate(
                     data["view"]["state"]["values"].items()
             ):
@@ -92,7 +93,7 @@ def interactive(request):
                             ]["selected_user"]
                             logger.info(f'The data on voting for the user has been correctly saved.')
                         else:
-                            voting_results[counter]["block_name"] = CATEGORIES[counter - 1]
+                            voting_results[counter]["block_name"] = categories[counter - 1]
                             voting_results[counter]["points"] = int(
                                 values["static_select-action"]["selected_option"]["text"][
                                     "text"
@@ -200,11 +201,11 @@ def check_points(request):
         logger.info('Dialog window has been created.')
 
         name = get_name(voting_user_id=voted_user)
-        text = (
-            f"Twoje punkty w kategorii 'Team up to win' to {points['points_team_up_to_win']}.\n"
-            f"Twoje punkty w kategorii 'Act to deliver' to {points['points_act_to_deliver']}.\n"
-            f"Twoje punkty w kategorii 'Disrupt to grow' to {points['points_disrupt_to_grow']}."
-        )
+        categories_points = []
+        for field, category in CATEGORIES.items():
+            categories_points.append(dict(category=category, points=points[field]))
+
+        text = texts.your_points(values=categories_points)
         message = points_message.check_points_message(name=name, text=text)
         logger.info('Message has been created.')
 
@@ -244,7 +245,7 @@ def check_winner_month(request):
         logger.info('Dialog window has been created.')
 
         name = get_name(voting_user_id=voting_user_id)
-        text = winner(start=current_month[0], end=current_month[1])
+        text = get_winners_message(start=current_month[0], end=current_month[1])
         message = message.check_points_message(name=name, text=text)
         logger.info('Message has been created.')
 

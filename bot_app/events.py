@@ -40,7 +40,7 @@ def message(payload: json):
     """Respond to the phrases "program", "wyróżnień", "wyroznien".
         The bot adds a comment informing that it is
         sending a message about the highlight program in a private message.
-        The bot sends a message with the content specified in the "about" file.
+        The bot sends a message with the texts specified in the "about" file.
     @param payload: dict
     @rtype: None
     """

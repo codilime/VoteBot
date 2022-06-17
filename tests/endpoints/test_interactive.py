@@ -1,28 +1,17 @@
 import json
-from django.apps import apps
 from unittest import mock
 
-from django.test import TestCase
-from bot_app.models import SlackProfile, SlackUser, VotingResults
+from bot_app.models import VotingResults
+from tests.base import BaseTestCase
 
 
-class TestInteractiveEndpoint(TestCase):
+class TestInteractiveEndpoint(BaseTestCase):
     url = "/interactive"
     token = "very_important_slack_token"
 
     def setUp(self) -> None:
-        self.slack_client_mock = mock.MagicMock()
-        apps.get_app_config('bot_app').slack_client._client = self.slack_client_mock
-
-        self.profile1 = SlackProfile.objects.create(real_name="Test User 1")
-        self.slack_user1 = SlackUser.objects.create(
-            slack_id="slack_user1_id", name="test.user.1", profile=self.profile1
-        )
-
-        self.profile2 = SlackProfile.objects.create(real_name="Test User 2")
-        self.slack_user2 = SlackUser.objects.create(
-            slack_id="slack_user2_id", name="test.user.2", profile=self.profile2
-        )
+        self._mock_slack_client()
+        self._add_simple_test_data(add_voting=False)
 
     @mock.patch("bot_app.events.SLACK_VERIFICATION_TOKEN", token)
     def test_vote(self) -> None:

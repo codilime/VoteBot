@@ -1,19 +1,17 @@
 import json
 from unittest import mock
-from django.apps import apps
-from django.test import TestCase
 
 from bot_app.events import WORDS_SEARCHED
 from bot_app.models import SlackProfile, SlackUser
+from tests.base import BaseTestCase
 
 
-class TestEventEndpoint(TestCase):
+class TestEventEndpoint(BaseTestCase):
     url = '/event/hook/'
     token = 'very_important_slack_token'
 
     def setUp(self) -> None:
-        self.slack_client_mock = mock.MagicMock()
-        apps.get_app_config('bot_app').slack_client._client = self.slack_client_mock
+        self._mock_slack_client()
 
         self.profile1 = SlackProfile.objects.create(real_name="Test User 1")
         self.slack_user1 = SlackUser.objects.create(

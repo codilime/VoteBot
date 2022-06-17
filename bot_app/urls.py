@@ -1,5 +1,4 @@
 from django.urls import path
-from .reminders import *
 from .events import slack_events
 from .slash import (
     vote,

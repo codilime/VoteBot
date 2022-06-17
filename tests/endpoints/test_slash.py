@@ -1,10 +1,8 @@
 import urllib.parse
-from unittest import mock
-from django.http import HttpResponse
-from django.test import TestCase
-from django.apps import apps
 
-from bot_app.models import SlackProfile, SlackUser, VotingResults
+from django.http import HttpResponse
+
+from tests.base import BaseTestCase
 
 
 def get_slash_command_data(command: str, user_id: str = None) -> dict:
@@ -25,30 +23,12 @@ def get_slash_command_data(command: str, user_id: str = None) -> dict:
     }
 
 
-class TestSlashCommands(TestCase):
+class TestSlashCommands(BaseTestCase):
     """ Simple cases testing if app properly responds to Slack's slash commands like /about. """
 
     def setUp(self) -> None:
-        self.slack_client_mock = mock.MagicMock()
-        apps.get_app_config('bot_app').slack_client._client = self.slack_client_mock
-
-        self.profile1 = SlackProfile.objects.create(real_name="Test User 1")
-        self.slack_user1 = SlackUser.objects.create(
-            slack_id="slack_user1_id", name="test.user.1", profile=self.profile1
-        )
-
-        self.profile2 = SlackProfile.objects.create(real_name="Test User 2")
-        self.slack_user2 = SlackUser.objects.create(
-            slack_id="slack_user2_id", name="test.user.2", profile=self.profile2
-        )
-
-        self.voting_result = VotingResults.objects.create(
-            voted_user=self.slack_user2,
-            voting_user_id=self.slack_user1,
-            points_team_up_to_win=0,
-            points_act_to_deliver=1,
-            points_disrupt_to_grow=2,
-        )
+        self._mock_slack_client()
+        self._add_simple_test_data()
 
     def _post_command(self, command: str, data: dict) -> HttpResponse:
         return self.client.post(
@@ -102,6 +82,9 @@ class TestSlashCommands(TestCase):
         assert f'Disrupt to grow przyznano {self.voting_result.points_disrupt_to_grow}' in msg
 
     def test_check_points(self) -> None:
+        your_points_text = f"""Masz {self.voting_result.points_team_up_to_win} punktów w kategorii Team up to win.
+Masz {self.voting_result.points_act_to_deliver} punktów w kategorii Act to deliver.
+Masz {self.voting_result.points_disrupt_to_grow} punktów w kategorii Disrupt to grow."""
         command = "/check-points"
         data = get_slash_command_data(command=command, user_id=self.slack_user2.slack_id)
 
@@ -114,12 +97,16 @@ class TestSlashCommands(TestCase):
         assert call_args["channel"] == self.slack_user2.slack_id
         assert self.profile2.real_name.split(' ')[0] in str(call_args['blocks'][0])
 
-        msg = str(call_args['blocks'][1])
-        assert f"Team up to win' to {self.voting_result.points_team_up_to_win}" in msg
-        assert f"Act to deliver' to {self.voting_result.points_act_to_deliver}" in msg
-        assert f"Disrupt to grow' to {self.voting_result.points_disrupt_to_grow}" in msg
+        msg = call_args['blocks'][1]['text']['text']
+        assert msg == your_points_text
 
     def test_check_winner_month(self) -> None:
+        # TODO what about draws?
+        winners_text = f"""Wyniki głosowania w programie wyróżnień:
+W kategorii Team up to win mając {self.voting_result.points_team_up_to_win} głosów wygrywa {self.slack_user1.profile.real_name}
+W kategorii Act to deliver mając {self.voting_result.points_act_to_deliver} głosów wygrywa {self.slack_user2.profile.real_name}
+W kategorii Disrupt to grow mając {self.voting_result.points_disrupt_to_grow} głosów wygrywa {self.slack_user2.profile.real_name}"""
+
         command = "/check-winner-month"
         data = get_slash_command_data(command=command, user_id=self.slack_user1.slack_id)
 
@@ -131,7 +118,5 @@ class TestSlashCommands(TestCase):
         assert call_args["text"] == "Check winner month."  # TODO move to common var
         assert call_args["channel"] == self.slack_user1.slack_id
 
-        msg = str(call_args['blocks'][1])
-        # 'Team up to win' wygrywa 'test.user.1', liczba głosów 0. # TODO what about draws?
-        assert f"'Act to deliver' wygrywa '{self.slack_user2.name}', liczba głosów {self.voting_result.points_act_to_deliver}." in msg
-        assert f"'Disrupt to grow' wygrywa '{self.slack_user2.name}', liczba głosów {self.voting_result.points_disrupt_to_grow}." in msg
+        msg = call_args['blocks'][1]['text']['text']
+        assert msg == winners_text

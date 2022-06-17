@@ -11,3 +11,12 @@ class BotAppConfig(AppConfig):
 
     def ready(self) -> None:
         self.slack_client = SlackClient(token=settings.SLACK_BOT_TOKEN)
+
+        from bot_app.scrap_users import create_users_from_slack
+        create_users_from_slack()
+
+        if settings.ENABLE_SCHEDULER:
+            from bot_app.scheduler.scheduler import Scheduler, schedule_jobs
+            schedule = Scheduler()
+            schedule_jobs(scheduler=schedule)
+            schedule.run()
