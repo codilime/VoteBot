@@ -1,6 +1,6 @@
 import calendar
-import datetime
 import logging
+from datetime import datetime
 
 import pytz
 from django.apps import apps
@@ -8,6 +8,7 @@ from django.db.models import Sum
 
 from bot_app.apps import BotAppConfig
 from bot_app.client import SlackClient
+from bot_app.messages import get_text_message
 from bot_app.texts import texts
 from .models import VotingResults, SlackUser
 
@@ -25,19 +26,11 @@ def get_slack_client() -> SlackClient:
     return apps.get_app_config(BotAppConfig.name).slack_client
 
 
-def get_users():
-    """Get data about users saved in the database."""
-    users = SlackUser.objects.all()
-    return users
-
-
-def get_user(slack_id: str):
-    """Get data about user saved in the database."""
+def get_user(slack_id: str) -> SlackUser:
     try:
-        user = SlackUser.objects.get(slack_id=slack_id)
-        return user
-    except Exception as error:
-        print(error)
+        return SlackUser.objects.get(slack_id=slack_id)
+    except SlackUser.DoesNotExist as e:
+        raise ValueError(e)
 
 
 def calculate_points(voted_user, start: datetime, end: datetime) -> dict:
@@ -84,7 +77,7 @@ def total_points(start: datetime, end: datetime) -> dict:
     """
     logger.info('=' * 30)
     logger.info(f'total_points')
-    users = get_users()
+    users = SlackUser.objects.all()
     points = {
         user.slack_id: calculate_points(voted_user=user.slack_id, start=start, end=end)
         for user in users
@@ -92,6 +85,15 @@ def total_points(start: datetime, end: datetime) -> dict:
     logger.info('Points was calculated')
     logger.info('=' * 30)
     return points
+
+
+def send_about_message(user: SlackUser) -> None:
+    greeting = texts.greeting(name=user.get_name())
+    content = texts.about()
+    message = get_text_message(channel=user.slack_id, content=[greeting, content])
+
+    client = get_slack_client()
+    client.post_chat_message(message, text="Information about awards program.")
 
 
 def get_winners_message(start: datetime, end: datetime) -> str:
@@ -114,25 +116,13 @@ def get_winners_message(start: datetime, end: datetime) -> str:
     return texts.announce_winners(values=winners_data)
 
 
-def get_start_end_day():
-    """Calculate timestamp for start and end current day.
-    @return:
-        ts_start : datetime of beginning current day.
-        ts_end : datetime of end current day.
-    """
-    today = datetime.datetime.now()
-    start = today.replace(hour=0, minute=0, second=0, microsecond=0)
-    end = today.replace(hour=23, minute=59, second=59, microsecond=9999)
-    return start, end
-
-
 def get_start_end_month():
     """Calculate timestamp for start and end current month.
     @return:
         start : datetime of beginning current month.
         end : datetime of end current month.
     """
-    today = datetime.datetime.now()
+    today = datetime.now()
     start = today.replace(
         day=1, hour=0, minute=0, second=0, microsecond=0, tzinfo=pytz.UTC
     )
@@ -147,204 +137,49 @@ def get_start_end_month():
     return start, end
 
 
-def validate_votes_himself(voting_results: dict, voting_user_id: str) -> bool:
-    """Check if the user voted for himself.
-    @rtype: bool
-    """
-    if voting_results[0]["selected_user"] == voting_user_id:
-        return False
-    return True
-
-
-def validate_points_amount(voting_results: dict) -> bool:
-    """Check if sum all points is between 0-3.
-    @rtype: bool
-    """
-    points = 0
-    for i in range(1, 4):
-        if "points" in voting_results[i]:
-            points += voting_results[i]["points"]
-        else:
-            points += 0
-    return points == 3
-
-
-def validate(voting_results: dict, voting_user_id: str) -> bool:
-    """Check if data from request is validate.
-    @return: bool : is validate data
-    """
-    return all(
-        [
-            validate_points_amount(voting_results),
-            validate_votes_himself(voting_results, voting_user_id),
-        ]
+def save_vote(vote: dict, user_id: str) -> None:
+    current_month = get_start_end_month()
+    res = VotingResults.objects.filter(
+        voting_user_id=get_user(user_id),
+        voted_user=get_user(vote["selected_user"]),
+        created__range=current_month,
     )
 
-
-def error_message(voting_results: dict, voting_user_id: str) -> str:
-    """Create errors message. Contain all errors.
-    @rtype: Tuple[dict, str] : error message
-    """
-    text = ""
-    if not validate_votes_himself(
-            voting_results=voting_results, voting_user_id=voting_user_id
-    ):
-        text += "You cannot vote for yourself.\n"
-    if not validate_points_amount(voting_results=voting_results):
-        text += "You must give out exactly 3 points in total.\n"
-    text += "Results were not saved."
-    return text
-
-
-def save_votes(voting_results: dict, voting_user: str) -> None:
-    """Save votes to db.
-    Create object and save in db.
-    If exist update object with data form slack voting form.
-    @return: None
-    """
-    logger.info('=' * 30)
-    logger.info('save_votes')
-    current_month = get_start_end_month()
-
-    desc = ''
-    logging.info(f'{desc}')
-    try:
-        desc = VotingResults.objects.filter(
-            voting_user_id=get_user(voting_user),
-            voted_user=get_user(voting_results[0]["selected_user"]),
-            created__range=(current_month[0], current_month[1]),
-        ).exists()
-        logging.info(f'{desc}')
-    except Exception as e:
-        logger.error(f'{e}')
-        logger.info('=' * 30)
-
-    """If voting user not in db, create object."""
-    try:
-        if not desc:
-            logger.info('Starting create user object.')
-            voting_res = VotingResults.objects.create(
-                voting_user_id=get_user(voting_user),
-                voted_user=get_user(voting_results[0]["selected_user"]),
-                points_team_up_to_win=voting_results[1]["points"],
-                points_act_to_deliver=voting_results[2]["points"],
-                points_disrupt_to_grow=voting_results[3]["points"],
-            )
-            logger.info(f'{voting_res}')
-            voting_res.save()
-    except Exception as e:
-        logger.error(f'{e}')
-        logger.info('=' * 30)
-
-    """If user in db, update object.
-    The reason for this is that saving all data form form, 
-    even if the form not complete."""
-    try:
-        if desc:
-            logger.info('Updating user object.')
-            voting_res = VotingResults.objects.get(
-                voting_user_id=get_user(voting_user),
-                voted_user=get_user(voting_results[0]["selected_user"]),
-                created__range=(current_month[0], current_month[1]),
-            )
-            logger.info(f'{voting_res}')
-            try:
-                voting_res.points_team_up_to_win = voting_results[1]["points"]
-                voting_res.points_act_to_deliver = voting_results[2]["points"]
-                voting_res.points_disrupt_to_grow = voting_results[3]["points"]
-                logger.info(f'{voting_res}')
-            except Exception as e:
-                logger.error(f'{e}')
-                logger.info('=' * 30)
-            voting_res.save(
-                update_fields=[
-                    "points_team_up_to_win",
-                    "points_act_to_deliver",
-                    "points_disrupt_to_grow",
-                ]
-            )
-    except Exception as e:
-        logger.error(f'{e}')
-        logger.info('=' * 30)
-
-
-def prepare_data(request):
-    """Decode data from request.
-    @return: dict
-    """
-    logger.info('=' * 30)
-    logger.info('prepare_data')
-    decode_data = request.body.decode("utf-8")
-
-    # TODO urldecode?
-    data = {}
-    try:
-        logger.info('Preparing data.')
-        params = [param for param in decode_data.split("&")]
-        for attributes in params:
-            item = attributes.split("=")
-            data[item[0]] = item[1]
-    except Exception as e:
-        logger.error(f'{e}')
-        logger.info('=' * 30)
-    logger.info('Data has been created successfully.')
-    logger.info('=' * 30)
-    return data
-
-
-def create_text(voting_user_id: str, voted_user=None) -> str:
-    """Create a message containing information on how the user voted.
-    @return: str : information on how the user voted
-    """
-    logging.info('=' * 30)
-    logging.info('create_text')
-    current_month = get_start_end_month()
-    voting_results = ''
-    try:
-        if voted_user is None:
-            voting_results = VotingResults.objects.filter(
-                voting_user_id=get_user(slack_id=voting_user_id),
-                created__range=(current_month[0], current_month[1]),
-            )
-            logging.info('User found successfully.')
-        else:
-            voting_results = VotingResults.objects.filter(
-                voting_user_id=get_user(slack_id=voting_user_id),
-                created__range=(current_month[0], current_month[1]),
-                voted_user=get_user(slack_id=voted_user)
-            )
-            logging.info('User found successfully.')
-    except Exception as e:
-        logging.error(f'{e}')
-        logger.info('=' * 30)
-
-    text = ''
-    for vote in voting_results:
-        text += (
-            f"Użytkownikowi {vote.voted_user.name}.\n"
-            f"W kategorii Team up to win przyznano {vote.points_team_up_to_win} punktów.\n"
-            f"W kategorii Act to deliver przyznano {vote.points_act_to_deliver} punktów.\n"
-            f"W kategorii Disrupt to grow przyznano {vote.points_disrupt_to_grow} punktów.\n\n"
+    if not res.exists():
+        VotingResults.objects.create(
+            voting_user_id=get_user(user_id),
+            voted_user=get_user(vote["selected_user"]),
+            points_team_up_to_win=vote["points_team_up_to_win"],
+            points_act_to_deliver=vote["points_act_to_deliver"],
+            points_disrupt_to_grow=vote["points_disrupt_to_grow"],
         )
-    logging.info('Text has been created successfully.')
-    logging.info('=' * 30)
-    return text
+    else:
+        res = res.first()
+        res.points_team_up_to_win = vote["points_team_up_to_win"]
+        res.points_act_to_deliver = vote["points_act_to_deliver"]
+        res.points_disrupt_to_grow = vote["points_disrupt_to_grow"]
+        res.modified = datetime.now()
+        res.save(
+            update_fields=[
+                "points_team_up_to_win",
+                "points_act_to_deliver",
+                "points_disrupt_to_grow",
+                "modified"
+            ]
+        )
 
 
-def get_name(voting_user_id):
-    logging.info('=' * 30)
-    logging.info('get_name')
-    name = f"*Cześć {get_user(voting_user_id).name.split('.')[0].capitalize()}.*\n"
-    logging.info('Success.')
-    logging.info('=' * 30)
-    return name
+def get_your_votes(user: SlackUser) -> list[str]:
+    current_month = get_start_end_month()
+    votes = list(VotingResults.objects.filter(
+        voting_user_id=user,
+        created__range=current_month,
+    ))
 
-
-"""
-1. Dodać logging
-2. Save wrzucuć w try except
-3. Dodawanie głosów więcej niż na jedną osobę
-4. Przypomnienia 
-5. submit wysyła tylko kiedy formularz jest poprawnie wypełniony 
-6. testy
-"""
+    users_votes = []
+    for vote in votes:
+        points = []
+        for field, category in CATEGORIES.items():
+            points.append({'category': category, 'points': getattr(vote, field)})
+        users_votes.append(texts.your_vote(values={'user': vote.voted_user.name, 'points': points}))
+    return users_votes

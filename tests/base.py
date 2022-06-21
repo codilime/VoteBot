@@ -31,3 +31,26 @@ class BaseTestCase(TestCase):
                 points_act_to_deliver=1,
                 points_disrupt_to_grow=2,
             )
+
+
+def get_slash_command_data(command: str, token: str = None, user_id: str = None) -> dict:
+    return {
+        "command": command,
+        "text": "",
+        "token": token or "token",
+        "team_id": "team_id",
+        "team_domain": "team_domain",
+        "channel_id": "channel_id",
+        "channel_name": "channel_name",
+        "user_id": user_id or "user_id",
+        "user_name": "user.name",
+        "api_app_id": "api_app_id",
+        "is_enterprise_install": "false",
+        "response_url": "response_url",
+        "trigger_id": "trigger_id",
+    }
+
+
+def get_text_from_file(filename: str) -> str:
+    with open('./texts/' + filename) as f:
+        return f.read()

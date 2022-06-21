@@ -5,8 +5,9 @@ from unittest import mock
 
 from django.test import TestCase, override_settings
 
-from bot_app.models import SlackUser
-from bot_app.scheduler.jobs import remind_about_program, announce_winners, send_periodic_messages
+from bot_app.models import SlackUser, VotingResults
+from bot_app.scheduler.jobs import remind_about_program, announce_winners, send_periodic_messages, \
+    notify_about_new_points
 from bot_app.scheduler.scheduler import Scheduler
 from bot_app.texts import texts
 from tests.base import BaseTestCase
@@ -49,9 +50,9 @@ class TestSchedulerJobs(BaseTestCase):
     @override_settings(HR_USERS=['test.user.1', 'other.user'])
     def test_announce_winners(self) -> None:
         winners_text = f"""Wyniki głosowania w programie wyróżnień:
-W kategorii Team up to win mając {self.voting_result.points_team_up_to_win} głosów wygrywa {self.slack_user1.profile.real_name}
-W kategorii Act to deliver mając {self.voting_result.points_act_to_deliver} głosów wygrywa {self.slack_user2.profile.real_name}
-W kategorii Disrupt to grow mając {self.voting_result.points_disrupt_to_grow} głosów wygrywa {self.slack_user2.profile.real_name}"""
+W kategorii Team up to win mając {self.voting_result.points_team_up_to_win} głosów wygrywa {self.slack_user1.profile.real_name}.
+W kategorii Act to deliver mając {self.voting_result.points_act_to_deliver} głosów wygrywa {self.slack_user2.profile.real_name}.
+W kategorii Disrupt to grow mając {self.voting_result.points_disrupt_to_grow} głosów wygrywa {self.slack_user2.profile.real_name}."""
 
         announce_winners()
         assert self.slack_client_mock.chat_postMessage.call_count == 1
@@ -79,3 +80,16 @@ W kategorii Disrupt to grow mając {self.voting_result.points_disrupt_to_grow} g
 
         assert reminder.call_count == 1
         assert announcer.call_count == 1
+
+    def test_new_points_notification(self) -> None:
+        got_voted_text = f"""{VotingResults.objects.count()} osób zagłosowało dzisiaj na Ciebie! Sumarycznie przyznali Ci:
+{self.voting_result.points_team_up_to_win} punktów w kategorii Team up to win.
+{self.voting_result.points_act_to_deliver} punktów w kategorii Act to deliver.
+{self.voting_result.points_disrupt_to_grow} punktów w kategorii Disrupt to grow."""
+
+        notify_about_new_points()
+        assert self.slack_client_mock.chat_postMessage.call_count == VotingResults.objects.count()
+
+        call = self.slack_client_mock.chat_postMessage.call_args[1]
+        assert call['channel'] == self.slack_user2.slack_id
+        assert call['text'] == got_voted_text

@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 
 class SlackProfile(models.Model):
@@ -42,6 +43,17 @@ class SlackUser(models.Model):
 
     def __str__(self):
         return f"{self.slack_id} -> {self.name}"
+
+    def get_name(self) -> str:
+        name = self.profile.real_name or self.real_name
+        try:
+            return name.split(' ')[0]
+        except (AttributeError, IndexError):
+            return name
+
+    def is_hr(self) -> bool:
+        # TODO HR should be boolean field on the model
+        return self.name in settings.HR_USERS
 
 
 class VotingResults(models.Model):

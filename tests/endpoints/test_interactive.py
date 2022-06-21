@@ -1,8 +1,62 @@
 import json
-from unittest import mock
+
+from django.test import override_settings
 
 from bot_app.models import VotingResults
 from tests.base import BaseTestCase
+
+
+def get_sent_vote_modal(
+    token: str,
+    voting_user: str,
+    voted_user: str,
+    points_team_up_to_win: int,
+    points_act_to_deliver: int,
+    points_disrupt_to_grow: int,
+) -> dict:
+    return {
+        "type": "view_submission",
+        "user": {
+            "id": voting_user,
+        },
+        "token": token,
+        "view": {
+            "state": {
+                "values": {
+                    "select_user": {
+                        "select_user-action": {"selected_user": voted_user}
+                    },
+                    "points_team_up_to_win": {
+                        "points_team_up_to_win-action": {
+                            "selected_option": {
+                                "text": {
+                                    "text": str(points_team_up_to_win),
+                                },
+                            }
+                        }
+                    },
+                    "points_act_to_deliver": {
+                        "points_act_to_deliver-action": {
+                            "selected_option": {
+                                "text": {
+                                    "text": str(points_act_to_deliver),
+                                },
+                            }
+                        }
+                    },
+                    "points_disrupt_to_grow": {
+                        "points_disrupt_to_grow-action": {
+                            "selected_option": {
+                                "text": {
+                                    "text": str(points_disrupt_to_grow),
+                                },
+                            }
+                        }
+                    },
+                }
+            },
+        },
+    }
 
 
 class TestInteractiveEndpoint(BaseTestCase):
@@ -13,96 +67,21 @@ class TestInteractiveEndpoint(BaseTestCase):
         self._mock_slack_client()
         self._add_simple_test_data(add_voting=False)
 
-    @mock.patch("bot_app.events.SLACK_VERIFICATION_TOKEN", token)
+    @override_settings(SLACK_VERIFICATION_TOKEN=token)
     def test_vote(self) -> None:
-        vote_modal = {
-            "type": "view_submission",
-            "user": {
-                "id": self.slack_user1.slack_id,
-                "username": self.slack_user1.name,
-                "name": self.slack_user1.name,
-                "team_id": "team_id",
-            },
-            "token": self.token,
-            "view": {
-                "blocks": [
-                    {
-                        "type": "section",
-                        "block_id": "K0I",
-                    },
-                    {
-                        "type": "input",
-                        "block_id": "field1",
-                    },
-                    {
-                        "type": "input",
-                        "block_id": "field2",
-                    },
-                    {
-                        "type": "input",
-                        "block_id": "field3",
-                    },
-                    {
-                        "type": "input",
-                        "block_id": "field4",
-                    },
-                    {"type": "divider", "block_id": "CBb"},
-                    {
-                        "type": "context",
-                        "block_id": "MkQ",
-                    },
-                ],
-                "state": {
-                    "values": {
-                        "field1": {
-                            "user_select-action": {
-                                "type": "users_select",
-                                "selected_user": self.slack_user2.slack_id,
-                            }
-                        },
-                        "field2": {
-                            "static_select-action": {
-                                "type": "static_select",
-                                "selected_option": {
-                                    "text": {
-                                        "type": "plain_text",
-                                        "text": "0",
-                                        "emoji": True,
-                                    },
-                                    "value": "value-0",
-                                },
-                            }
-                        },
-                        "field3": {
-                            "static_select-action": {
-                                "type": "static_select",
-                                "selected_option": {
-                                    "text": {
-                                        "type": "plain_text",
-                                        "text": "2",
-                                        "emoji": True,
-                                    },
-                                    "value": "value-2",
-                                },
-                            }
-                        },
-                        "field4": {
-                            "static_select-action": {
-                                "type": "static_select",
-                                "selected_option": {
-                                    "text": {
-                                        "type": "plain_text",
-                                        "text": "1",
-                                        "emoji": True,
-                                    },
-                                    "value": "value-1",
-                                },
-                            }
-                        },
-                    }
-                },
-            },
-        }
+        # Save new vote.
+        points_team_up_to_win = 0
+        points_act_to_deliver = 1
+        points_disrupt_to_grow = 2
+
+        vote_modal = get_sent_vote_modal(
+            token=self.token,
+            voting_user=self.slack_user1.slack_id,
+            voted_user=self.slack_user2.slack_id,
+            points_team_up_to_win=points_team_up_to_win,
+            points_act_to_deliver=points_act_to_deliver,
+            points_disrupt_to_grow=points_disrupt_to_grow,
+        )
 
         with self.assertRaises(VotingResults.DoesNotExist):
             VotingResults.objects.latest("created")
@@ -113,17 +92,32 @@ class TestInteractiveEndpoint(BaseTestCase):
         vote = VotingResults.objects.latest("created")
         assert vote.voting_user_id == self.slack_user1
         assert vote.voted_user == self.slack_user2
-        assert vote.points_team_up_to_win == 0
-        assert vote.points_act_to_deliver == 2
-        assert vote.points_disrupt_to_grow == 1
+        assert vote.points_team_up_to_win == points_team_up_to_win
+        assert vote.points_act_to_deliver == points_act_to_deliver
+        assert vote.points_disrupt_to_grow == points_disrupt_to_grow
 
-        self.slack_client_mock.chat_postMessage.assert_called_once()
-        call_args = self.slack_client_mock.chat_postMessage.call_args[1]
-        assert call_args["text"] == "Check your votes."  # TODO move to common var
-        assert call_args["channel"] == self.slack_user1.slack_id
+        # Update vote.
+        points_team_up_to_win = 3
+        points_act_to_deliver = 0
+        points_disrupt_to_grow = 0
 
-        msg = str(call_args["blocks"][1])
-        assert self.slack_user2.name in msg
-        assert f"Team up to win przyznano {vote.points_team_up_to_win}" in msg
-        assert f"Act to deliver przyznano {vote.points_act_to_deliver}" in msg
-        assert f"Disrupt to grow przyznano {vote.points_disrupt_to_grow}" in msg
+        vote_modal = get_sent_vote_modal(
+            token=self.token,
+            voting_user=self.slack_user1.slack_id,
+            voted_user=self.slack_user2.slack_id,
+            points_team_up_to_win=points_team_up_to_win,
+            points_act_to_deliver=points_act_to_deliver,
+            points_disrupt_to_grow=points_disrupt_to_grow,
+        )
+
+        response = self.client.post(self.url, data={"payload": json.dumps(vote_modal)})
+        assert response.status_code == 200
+        assert len(VotingResults.objects.all()) == 1
+
+        vote = VotingResults.objects.latest("created")
+        assert vote.voting_user_id == self.slack_user1
+        assert vote.voted_user == self.slack_user2
+        assert vote.points_team_up_to_win == points_team_up_to_win
+        assert vote.points_act_to_deliver == points_act_to_deliver
+        assert vote.points_disrupt_to_grow == points_disrupt_to_grow
+        assert vote.created != vote.modified

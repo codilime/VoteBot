@@ -1,20 +1,22 @@
 from django.urls import path
+
 from .events import slack_events
+from .interactive import interactive
 from .slash import (
     vote,
-    interactive,
     check_votes,
     check_points,
-    check_winner_month,
+    check_winners,
     about,
 )
 
 urlpatterns = [
-    path("event/hook/", slack_events, name="slack_events"),
     path("about", about, name="about"),
     path("vote", vote, name="vote"),
-    path("interactive", interactive, name="interactive"),
     path("check-votes", check_votes, name="check_votes"),
     path("check-points", check_points, name="check_points"),
-    path("check-winner-month", check_winner_month, name="check_winner_month"),
+    path("check-winners", check_winners, name="check_winner_month"),
+
+    path("interactive", interactive, name="interactive"),
+    path("event/hook/", slack_events, name="slack_events"),
 ]

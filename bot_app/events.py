@@ -1,110 +1,82 @@
 import json
 import string
 
-from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseBadRequest, HttpResponseForbidden
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from pyee import EventEmitter
 
-from bot_app.utils import get_slack_client, get_user
-from .adapter_slackclient import slack_events_adapter, SLACK_VERIFICATION_TOKEN
-from .message import DialogWidow
+from bot_app.forms import validate_token
+from bot_app.utils import get_slack_client, get_user, send_about_message
 
-WORDS_SEARCHED = ["program", "wyróżnień", "wyroznien"]
-
-info_channels = {}
-
-
-def send_info(channel, user):
-    """Send info about awards program."""
-    client = get_slack_client()
-    if channel not in info_channels:
-        info_channels[channel] = {}
-    if user in info_channels[channel]:
-        return
-
-    name = f"*Cześć {get_user(user).name.split('.')[0].capitalize()}.*\n"
-    info = DialogWidow(channel)
-    message = info.about_message(name=name)
-    response = client.post_chat_message(message, text="pw_bot")
-    info.timestamp = response["ts"]
-    info_channels[channel][user] = info
+KEYWORDS = ["wyróżnień", "wyroznien"]
 
 
-def check_if_searched_words(message):
-    msg = message.lower()
-    msg = msg.translate(str.maketrans("", "", string.punctuation))
-    return any(word in msg for word in WORDS_SEARCHED)
+class SlackEventAdapter(EventEmitter):
+    def __init__(self, verification_token):
+        EventEmitter.__init__(self)
+        self.verification_token = verification_token
 
 
-@slack_events_adapter.on("message")
-def message(payload: json):
-    """Respond to the phrases "program", "wyróżnień", "wyroznien".
-        The bot adds a comment informing that it is
-        sending a message about the highlight program in a private message.
-        The bot sends a message with the texts specified in the "about" file.
-    @param payload: dict
-    @rtype: None
-    """
-    event = payload.get("event", {})
-    channel_id = event.get("channel")
-    user_id = event.get("user")
-    text = event.get("text")
-
-    client = get_slack_client()
-    if user_id != client.bot_id:
-        if check_if_searched_words(text.lower()):
-            text = "Informacje o pragramie wyróżnień prześlę Ci na pw. Sprawdź swoją skrzynkę."
-            ts = event.get("ts")
-            msg = dict(channel=channel_id, thread_ts=ts)
-            client.post_chat_message(msg, text=text)
-            send_info(f"@{user_id}", user_id)
-
-
-def render_json_response(request, data, status=None, support_jsonp=False):
-    json_str = json.dumps(data, ensure_ascii=False, indent=2)
-    callback = request.GET.get("callback")
-    if not callback:
-        callback = request.POST.get("callback")  # in case of POST and JSONP
-
-    if callback and support_jsonp:
-        json_str = "%s(%s)" % (callback, json_str)
-        response = HttpResponse(
-            json_str,
-            content_type="application/javascript; charset=UTF-8",
-            status=status,
-        )
-    else:
-        response = HttpResponse(
-            json_str, content_type="application/json; charset=UTF-8", status=status
-        )
-    return response
+slack_events_adapter = SlackEventAdapter(settings.SLACK_VERIFICATION_TOKEN)
 
 
 @csrf_exempt
-def slack_events(
-        request, *args, **kwargs
-):  # cf. https://api.slack.com/events/url_verification
-    if request.method != "POST":
-        return HttpResponseNotAllowed(['POST'], f"{request.method} is not allowed")
-
+@require_http_methods('POST')
+def slack_events(request, *args, **kwargs):
     try:
-        # https://stackoverflow.com/questions/29780060/trying-to-parse-request-body-from-post-in-django
-        event_data = json.loads(request.body.decode("utf-8"))
-    except ValueError as e:  # https://stackoverflow.com/questions/4097461/python-valueerror-error-message
+        data = json.loads(request.body.decode("utf-8"))
+    except (ValueError, json.JSONDecodeError) as e:
         return HttpResponseBadRequest(f"Unable to deserialize json: {e}")
 
-    # Echo the URL verification challenge code
-    if "challenge" in event_data:
-        return render_json_response(request, {"challenge": event_data["challenge"]})
-
     # Verify the request token
-    request_token = event_data.get("token")
-    if request_token != SLACK_VERIFICATION_TOKEN:
-        return HttpResponseForbidden("Invalid Slack verification token.")
+    try:
+        validate_token(value=data.get('token'))
+    except ValidationError as e:
+        return HttpResponseBadRequest(e)
 
-    # Parse the Event payload and emit the event to the event listener
-    if "event" in event_data:
-        event_type = event_data["event"]["type"]
-        slack_events_adapter.emit(event_type, event_data)
-        return HttpResponse("")
+    # Echo the URL verification challenge code to validate with Slack API.
+    # https://api.slack.com/events/url_verification
+    if challenge := data.get('challenge'):
+        return JsonResponse({'challenge': challenge})
+
+    # Parse the event payload and emit the event to the listener
+    if event := data.get("event", {}):
+        event_type = event.get("type")
+        slack_events_adapter.emit(event_type, event)
+        return HttpResponse()
 
     return HttpResponseBadRequest("Not a valid event.")
+
+
+def contains_keywords(message: str) -> bool:
+    msg = message.lower()
+    msg = msg.translate(str.maketrans("", "", string.punctuation))
+    return any(word in msg for word in KEYWORDS)
+
+
+@slack_events_adapter.on("message")
+def on_message(payload: dict) -> None:
+    """ Respond to user's message with info about awards program, if message contains predefined phrases. """
+    user_id = payload.get("user")
+    channel_id = payload.get("channel")
+    ts = payload.get("ts")
+    text = payload.get("text")
+
+    client = get_slack_client()
+    user = get_user(slack_id=user_id)
+    if user.is_bot or user_id == client.bot_id:
+        return
+
+    if not contains_keywords(message=text.lower()):
+        return
+
+    msg = dict(channel=channel_id, thread_ts=ts)
+    text = "Informacje o pragramie wyróżnień przesłałem Ci na pw."
+    client.post_chat_message(msg, text=text)
+
+    send_about_message(user=user)  # TODO send only once for hour on each channel
+    return

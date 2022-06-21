@@ -9,7 +9,7 @@ class TestInvalidMethod(TestCase):
             '/interactive',
             '/check-votes',
             '/check-points',
-            '/check-winner-month',
+            '/check-winners',
             '/event/hook/',
     ))
     def test_method(self, url: str) -> None:

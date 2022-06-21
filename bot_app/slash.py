@@ -2,352 +2,139 @@
 The module contains a collection of methods that
 support voting in the award program.
 """
-import json
 import logging
-from bot_app.texts import texts
-from django.http import HttpResponse, HttpResponseNotAllowed
+
+from django.http import HttpResponse, HttpRequest, HttpResponseBadRequest, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+
+from bot_app.forms import UserForm, TriggerForm
+from bot_app.messages import get_text_message
+from bot_app.modals import get_voting_modal
+from bot_app.models import SlackUser
+from bot_app.texts import texts
 from bot_app.utils import CATEGORIES
-from bot_app.message import DialogWidow
-from bot_app.utils import (
-    calculate_points,
-    create_text,
-    prepare_data,
-    validate,
-    error_message,
-    save_votes,
-    get_start_end_month,
-    get_winners_message,
-    get_name,
-    get_slack_client, get_user
-)
+from bot_app.utils import calculate_points, get_start_end_month, get_winners_message, get_slack_client, get_your_votes, \
+    send_about_message
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
-# CATEGORIES = ["Team up to win", "Act to deliver", "Disrupt to grow"]
 info_channels = {}
 
 
 @csrf_exempt
+@require_http_methods('POST')
 def vote(request):
-    """Supports the slash method - '/vote'.
-    Sends the voting form to the user.
-    """
-    if request.method != "POST":
-        return HttpResponseNotAllowed(['POST'], f"{request.method} is not allowed")
-
-    # TODO validate token
-
-    data = prepare_data(request=request)
-    user_id = data.get("user_id")
-    trigger_id = data["trigger_id"]
-
-    vote_form = DialogWidow(channel=user_id)
-    message = vote_form.vote_message()
+    """ Handles '/vote' slash command. Shows user the voting form. """
+    form = TriggerForm(request.POST)
+    if not form.is_valid():
+        errors = form.errors.as_json()
+        logger.warning(errors)
+        return HttpResponseBadRequest(errors)
 
     client = get_slack_client()
-    client.open_view(trigger_id=trigger_id, view=message)
-    return HttpResponse(status=200)
+    client.open_view(trigger_id=form.cleaned_data['trigger_id'], view=get_voting_modal())
+    return HttpResponse()
 
 
 @csrf_exempt
-def interactive(request):
-    """Endpoint for receiving interactivity requests from Slack.
-    The method handles the submitted voting form.
-    Saves data in the database and sends the user information about the vote.
-    """
-    if request.method != "POST":
-        return HttpResponseNotAllowed(['POST'], f"{request.method} is not allowed")
-
-    # TODO validate token
-
-    logger.info('=' * 30)
-    logger.info('interactive')
-    if request.method == "POST":
-        data = json.loads(request.POST["payload"])
-        logger.info('Data was decode successfully.')
-
-        voting_user_id = data["user"].get("id")
-
-        voting_results = {}
-        try:
-            """Prepare data (voting results) for saving in database. """
-            counter = 0
-            for idx in data["view"]["blocks"]:
-                if idx["type"] == "input":
-                    voting_results[counter] = {"block_id": idx["block_id"]}
-                    counter += 1
-            logger.info('Block names were correctly retrieved.')
-
-            categories = list(CATEGORIES.keys())
-            for counter, (block, values) in enumerate(
-                    data["view"]["state"]["values"].items()
-            ):
-                if block == voting_results[counter]["block_id"]:
-                    try:
-                        if "user_select-action" in values:
-                            voting_results[counter]["block_name"] = "User select"
-                            voting_results[counter]["selected_user"] = values[
-                                "user_select-action"
-                            ]["selected_user"]
-                            logger.info(f'The data on voting for the user has been correctly saved.')
-                        else:
-                            voting_results[counter]["block_name"] = categories[counter - 1]
-                            voting_results[counter]["points"] = int(
-                                values["static_select-action"]["selected_option"]["text"][
-                                    "text"
-                                ]
-                            )
-                            logger.info('Voted points has been saved successfully.')
-                    except TypeError as e:
-                        voting_results[counter]["points"] = 0
-                        logger.error(f"An error occurred while saving data: {e}.")
-                else:
-                    logger.error('There is no block_id in voting_results')
-        except Exception as e:
-            logger.error(f'{e}')
-            logger.info('=' * 30)
-
-        """Check if data is validate. If not send message contain errors."""
-        voting_user = get_user(slack_id=voting_user_id)
-        response_message = DialogWidow(channel=voting_user_id)
-        logger.info('Dialog window has been created.')
-        name = get_name(voting_user_id=voting_user_id)
-        client = get_slack_client()
-
-        try:
-            if not validate(voting_results=voting_results, voting_user_id=voting_user_id):
-                text = error_message(voting_results, voting_user_id)
-                message = response_message.check_points_message(name=name, text=text)
-                response = client.post_chat_message(message, text="Check your votes.")
-                logger.info(f'Error message has been sent successfully. Text: {text}')
-                logger.info('=' * 30)
-                return HttpResponse(status=200)
-
-            else:
-                """Save voting results in database and send message with voting results."""
-                save_votes(voting_results=voting_results, voting_user=voting_user_id)
-                logger.info('Votes has been saved.')
-                text = create_text(
-                    voting_user_id=voting_user_id,
-                    voted_user=voting_results[0]['selected_user']
-                )
-                message = response_message.check_points_message(name=name, text=text)
-                logger.info(f'Message has been created. Text: {text}')
-
-                response = client.post_chat_message(message, text="Check your votes.")
-                logger.info('Information about the voting result has been successfully sent.')
-                logger.info('=' * 30)
-                return HttpResponse(status=200)
-        except Exception as e:
-            logger.error(f'{e}')
-            logger.info('=' * 30)
-    logger.error('Method POST not received.')
-
-
-@csrf_exempt
+@require_http_methods('POST')
 def check_votes(request):
-    """Check user votes.
-    @param request
-    @return:
-    """
-    if request.method != "POST":
-        return HttpResponseNotAllowed(['POST'], f"{request.method} is not allowed")
-
-    # TODO validate token
-
-    data = prepare_data(request=request)
-    voting_user_id = data.get("user_id")
+    """ Handles /check-votes slash command. Check points you've given in the current month. """
+    form = UserForm(request.POST)
+    if not form.is_valid():
+        errors = form.errors.as_json()
+        logger.warning(errors)
+        return HttpResponseBadRequest(errors)
 
     try:
-        text = create_text(voting_user_id=voting_user_id)
+        user = SlackUser.objects.get(slack_id=form.cleaned_data['user_id'])
+    except SlackUser.DoesNotExist:
+        return HttpResponseBadRequest('User does not exist.')
 
-        name = get_name(voting_user_id=voting_user_id)
-        response_message = DialogWidow(channel=voting_user_id)
-        message = response_message.check_points_message(name=name, text=text)
+    greeting = texts.greeting(name=user.get_name())
+    votes = get_your_votes(user=user)
+    message = get_text_message(channel=user.slack_id, content=[greeting, '\n\n'.join(votes)])
 
-        client = get_slack_client()
-        client.post_chat_message(message, text="Check your votes.")
-        return HttpResponse(status=200)
-    except Exception as e:
-        logger.error(f'{e}')
+    client = get_slack_client()
+    client.post_chat_message(message, text="Check points you've given in the current month.")
+    return HttpResponse()
 
 
 @csrf_exempt
-def check_points(request):
-    """Check the points you get in current month.
-    @param: request
-    @return:
-    """
-    if request.method != "POST":
-        return HttpResponseNotAllowed(['POST'], f"{request.method} is not allowed")
+@require_http_methods('POST')
+def check_points(request: HttpRequest) -> HttpResponse:
+    """ Handles /check-points slash command. Check your points in the current month. """
+    form = UserForm(request.POST)
+    if not form.is_valid():
+        errors = form.errors.as_json()
+        logger.warning(errors)
+        return HttpResponseBadRequest(errors)
 
-    # TODO validate token
-
-    logger.info('=' * 30)
-    logger.info('check_points')
-    data = prepare_data(request=request)
-    logger.info('Data was decode successfully.')
-
-    voted_user = data.get("user_id")
-    current_month = get_start_end_month()
     try:
-        points = calculate_points(
-            voted_user=voted_user, start=current_month[0], end=current_month[1]
-        )
-        logger.info('Points were calculated correctly.')
-        points_message = DialogWidow(channel=voted_user)
-        logger.info('Dialog window has been created.')
+        user = SlackUser.objects.get(slack_id=form.cleaned_data['user_id'])
+    except SlackUser.DoesNotExist:
+        return HttpResponseBadRequest('User does not exist.')
 
-        name = get_name(voting_user_id=voted_user)
-        categories_points = []
-        for field, category in CATEGORIES.items():
-            categories_points.append(dict(category=category, points=points[field]))
+    start, end = get_start_end_month()
+    points = calculate_points(voted_user=user.slack_id, start=start, end=end)
 
-        text = texts.your_points(values=categories_points)
-        message = points_message.check_points_message(name=name, text=text)
-        logger.info('Message has been created.')
+    categories_points = []
+    for field, category in CATEGORIES.items():
+        categories_points.append(dict(category=category, points=points[field]))
+    content = texts.your_points(values=categories_points)
 
-        client = get_slack_client()
-        client.post_chat_message(message, text="Check the points you get in current month")
-        logger.info('The message has been sent successfully.')
-        logger.info('=' * 30)
+    greeting = texts.greeting(name=user.get_name())
+    message = get_text_message(channel=user.slack_id, content=[greeting, content])
 
-        return HttpResponse(status=200)
-    except Exception as e:
-        logger.error(f'{e}')
-        logger.info('=' * 30)
+    client = get_slack_client()
+    client.post_chat_message(message, text="Check your points in the current month.")
+    return HttpResponse()
 
 
 @csrf_exempt
-def check_winner_month(request):
-    """Check winner of current month.
-    @param: request
-    @return:
-    """
-    if request.method != "POST":
-        return HttpResponseNotAllowed(['POST'], f"{request.method} is not allowed")
-
-    # TODO validate token
-
-    logger.info('=' * 30)
-    logger.info('check_winner_month')
-
-    data = prepare_data(request=request)
-    logger.info('Data was decode successfully.')
-
-    voting_user_id = data.get("user_id")
-    current_month = get_start_end_month()
+@require_http_methods('POST')
+def check_winners(request):
+    """ Handles /check-winners slash command. Check winners in the current month. """
+    form = UserForm(request.POST)
+    if not form.is_valid():
+        errors = form.errors.as_json()
+        logger.warning(errors)
+        return HttpResponseBadRequest(errors)
 
     try:
-        message = DialogWidow(channel=voting_user_id)
-        logger.info('Dialog window has been created.')
+        user = SlackUser.objects.get(slack_id=form.cleaned_data['user_id'])
+    except SlackUser.DoesNotExist:
+        return HttpResponseBadRequest('User does not exist.')
 
-        name = get_name(voting_user_id=voting_user_id)
-        text = get_winners_message(start=current_month[0], end=current_month[1])
-        message = message.check_points_message(name=name, text=text)
-        logger.info('Message has been created.')
+    if not user.is_hr():
+        return HttpResponseForbidden('Only HR users can check winners.')  # TODO reply on slack
 
-        client = get_slack_client()
-        client.post_chat_message(message, text="Check winner month.")
-        logger.info('The message has been sent successfully.')
-        logger.info('=' * 30)
-        return HttpResponse(status=200)
-    except Exception as e:
-        logger.error(f'{e}')
-        logger.info('=' * 30)
+    start, end = get_start_end_month()
+    greeting = texts.greeting(name=user.get_name())
+    content = get_winners_message(start=start, end=end)
+    message = get_text_message(channel=user.slack_id, content=[greeting, content])
+
+    client = get_slack_client()
+    client.post_chat_message(message, text="Check this month's winners!")
+    return HttpResponse()
 
 
 @csrf_exempt
-def about(request):
-    """Supports the slash method - '/about'.
-    Send message with information about award program.
-    """
-    if request.method != "POST":
-        return HttpResponseNotAllowed(['POST'], f"{request.method} is not allowed")
-
-    # TODO validate token
-
-    logger.info('=' * 30)
-    logger.info('about')
-    data = prepare_data(request=request)
-    user_id = data.get("user_id")
+@require_http_methods('POST')
+def about(request: HttpRequest) -> HttpResponse:
+    """ Handles /about slash command. Sends message with info on awards program. """
+    form = UserForm(request.POST)
+    if not form.is_valid():
+        errors = form.errors.as_json()
+        logger.warning(errors)
+        return HttpResponseBadRequest(errors)
 
     try:
-        name = f"*Cześć {get_user(user_id).name.split('.')[0].capitalize()}.*\n"
-        info_message = DialogWidow(channel=user_id)
-        logger.info('Dialog window has been created.')
+        user = SlackUser.objects.get(slack_id=form.cleaned_data['user_id'])
+    except SlackUser.DoesNotExist:
+        return HttpResponseBadRequest('User does not exist.')
 
-        message = info_message.about_message(name)
-        logger.info('Message has been created.')
-
-        client = get_slack_client()
-        client.post_chat_message(message, text="See information about award program")
-        logger.info('The message has been sent successfully.')
-
-        logger.info('=' * 30)
-        return HttpResponse(status=200)
-
-    except Exception as e:
-        logger.error(f'{e}')
-        logger.info('=' * 30)
-
-
-# TODO duplicate events.py code?
-# def render_json_response(request, data, status=None, support_jsonp=False):
-#     json_str = json.dumps(data, ensure_ascii=False, indent=2)
-#     callback = request.GET.get("callback")
-#     if not callback:
-#         callback = request.POST.get("callback")  # in case of POST and JSONP
-#
-#     if callback and support_jsonp:
-#         json_str = "%s(%s)" % (callback, json_str)
-#         response = HttpResponse(
-#             json_str,
-#             content_type="application/javascript; charset=UTF-8",
-#             status=status,
-#         )
-#     else:
-#         response = HttpResponse(
-#             json_str, content_type="application/json; charset=UTF-8", status=status
-#         )
-#     return response
-#
-#
-# @csrf_exempt
-# def slack_events(
-#     request, *args, **kwargs
-# ):  # cf. https://api.slack.com/events/url_verification
-#     # logging.info(request.method)
-#     if request.method == "GET":
-#         raise Http404("These are not the slackbots you're looking for.")
-#
-#     try:
-#         # https://stackoverflow.com/questions/29780060/trying-to-parse-request-body-from-post-in-django
-#         event_data = json.loads(request.body.decode("utf-8"))
-#     except ValueError as e:  # https://stackoverflow.com/questions/4097461/python-valueerror-error-message
-#         return HttpResponse("")
-#
-#     # Echo the URL verification challenge code
-#     if "challenge" in event_data:
-#         return render_json_response(request, {"challenge": event_data["challenge"]})
-#
-#     # Parse the Event payload and emit the event to the event listener
-#     if "event" in event_data:
-#         # Verify the request token
-#         request_token = event_data["token"]
-#         if request_token != SLACK_VERIFICATION_TOKEN:
-#             slack_events_adapter.emit("error", "invalid verification token")
-#             message = (
-#                 "Request contains invalid Slack verification token: %s\n"
-#                 "Slack adapter has: %s" % (request_token, SLACK_VERIFICATION_TOKEN)
-#             )
-#             raise PermissionDenied(message)
-#
-#         event_type = event_data["event"]["type"]
-#         slack_events_adapter.emit(event_type, event_data)
-#         return HttpResponse("")
-#
-#     # default case
-#     return HttpResponse("")
+    send_about_message(user=user)
+    return HttpResponse()

@@ -15,7 +15,7 @@ SIGNING_SECRET = os.environ.get("SIGNING_SECRET")
 SLACK_VERIFICATION_TOKEN = os.environ.get("SLACK_VERIFICATION_TOKEN")
 
 ENABLE_SCHEDULER = os.environ.get("ENABLE_SCHEDULER") == '1'
-HR_USERS = os.environ.get("HR_USERS", '').split(',')
+HR_USERS = os.environ.get("HR_USERS", '').split(',')    # TODO Define as bool on model
 
 ALLOWED_HOSTS = ['*']
 

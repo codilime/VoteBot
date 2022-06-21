@@ -3,8 +3,7 @@ import time
 
 import schedule
 
-from bot_app.scheduler.jobs import send_periodic_messages
-from bot_app.scrap_users import create_users_from_slack
+from bot_app.scheduler.jobs import send_periodic_messages, notify_about_new_points, create_users_from_slack
 
 
 class Scheduler:
@@ -56,5 +55,6 @@ class Scheduler:
 def schedule_jobs(scheduler: Scheduler) -> None:
     """ This func schedules any jobs that app should be doing in the background.
     How to schedule a new job: https://schedule.readthedocs.io/en/stable/examples.html"""
-    scheduler.every().week.do(create_users_from_slack)
+    scheduler.every().day.at("10:00").do(create_users_from_slack)
     scheduler.every().day.at("10:00").do(send_periodic_messages)
+    scheduler.every().day.at("16:00").do(notify_about_new_points)
