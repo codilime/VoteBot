@@ -53,7 +53,7 @@ def check_votes(request):
     except SlackUser.DoesNotExist:
         return HttpResponseBadRequest('User does not exist.')
 
-    greeting = texts.greeting(name=user.get_name())
+    greeting = texts.greeting(name=user.real_name)
     votes = get_your_votes(user=user)
     message = get_text_message(channel=user.slack_id, content=[greeting, '\n\n'.join(votes)])
 
@@ -85,7 +85,7 @@ def check_points(request: HttpRequest) -> HttpResponse:
         categories_points.append(dict(category=category, points=points[field]))
     content = texts.your_points(values=categories_points)
 
-    greeting = texts.greeting(name=user.get_name())
+    greeting = texts.greeting(name=user.real_name)
     message = get_text_message(channel=user.slack_id, content=[greeting, content])
 
     client = get_slack_client()
@@ -108,11 +108,11 @@ def check_winners(request):
     except SlackUser.DoesNotExist:
         return HttpResponseBadRequest('User does not exist.')
 
-    if not user.is_hr():
+    if not user.is_hr:
         return HttpResponseForbidden('Only HR users can check winners.')  # TODO reply on slack
 
     start, end = get_start_end_month()
-    greeting = texts.greeting(name=user.get_name())
+    greeting = texts.greeting(name=user.real_name)
     content = get_winners_message(start=start, end=end)
     message = get_text_message(channel=user.slack_id, content=[greeting, content])
 

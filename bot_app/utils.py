@@ -10,7 +10,7 @@ from bot_app.apps import BotAppConfig
 from bot_app.client import SlackClient
 from bot_app.messages import get_text_message
 from bot_app.texts import texts
-from .models import VotingResults, SlackUser
+from .models import Vote, SlackUser
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -46,13 +46,13 @@ def calculate_points(voted_user, start: datetime, end: datetime) -> dict:
     logger.info('=' * 30)
     logger.info(f'calculate_points')
     points = {
-        "points_team_up_to_win": VotingResults.objects.filter(
+        "points_team_up_to_win": Vote.objects.filter(
             voted_user=get_user(voted_user), created__range=(start, end)
         ).aggregate(Sum("points_team_up_to_win"))["points_team_up_to_win__sum"],
-        "points_act_to_deliver": VotingResults.objects.filter(
+        "points_act_to_deliver": Vote.objects.filter(
             voted_user=get_user(voted_user), created__range=(start, end)
         ).aggregate(Sum("points_act_to_deliver"))["points_act_to_deliver__sum"],
-        "points_disrupt_to_grow": VotingResults.objects.filter(
+        "points_disrupt_to_grow": Vote.objects.filter(
             voted_user=get_user(voted_user), created__range=(start, end)
         ).aggregate(Sum("points_disrupt_to_grow"))["points_disrupt_to_grow__sum"],
     }
@@ -88,7 +88,7 @@ def total_points(start: datetime, end: datetime) -> dict:
 
 
 def send_about_message(user: SlackUser) -> None:
-    greeting = texts.greeting(name=user.get_name())
+    greeting = texts.greeting(name=user.real_name)
     content = texts.about()
     message = get_text_message(channel=user.slack_id, content=[greeting, content])
 
@@ -111,7 +111,7 @@ def get_winners_message(start: datetime, end: datetime) -> str:
     for attr, category in CATEGORIES.items():
         user = max(users_points, key=lambda v: users_points[v][attr])
         points = users_points[user][attr]
-        user_name = get_user(user).profile.real_name
+        user_name = get_user(user).real_name
         winners_data.append(dict(category=category, points=points, user=user_name))
     return texts.announce_winners(values=winners_data)
 
@@ -139,15 +139,15 @@ def get_start_end_month():
 
 def save_vote(vote: dict, user_id: str) -> None:
     current_month = get_start_end_month()
-    res = VotingResults.objects.filter(
-        voting_user_id=get_user(user_id),
+    res = Vote.objects.filter(
+        voting_user=get_user(user_id),
         voted_user=get_user(vote["selected_user"]),
         created__range=current_month,
     )
 
     if not res.exists():
-        VotingResults.objects.create(
-            voting_user_id=get_user(user_id),
+        Vote.objects.create(
+            voting_user=get_user(user_id),
             voted_user=get_user(vote["selected_user"]),
             points_team_up_to_win=vote["points_team_up_to_win"],
             points_act_to_deliver=vote["points_act_to_deliver"],
@@ -171,8 +171,8 @@ def save_vote(vote: dict, user_id: str) -> None:
 
 def get_your_votes(user: SlackUser) -> list[str]:
     current_month = get_start_end_month()
-    votes = list(VotingResults.objects.filter(
-        voting_user_id=user,
+    votes = list(Vote.objects.filter(
+        voting_user=user,
         created__range=current_month,
     ))
 

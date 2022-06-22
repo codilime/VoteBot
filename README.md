@@ -31,7 +31,6 @@ SIGNING_SECRET=<your-key>
 SLACK_VERIFICATION_TOKEN=<your-slack-verification-token>
 
 ENABLE_SCHEDULER=0
-HR_USERS=user.name1,user.name2,user.name3
 ```
 You can find the token in the Basic Information tab.
 

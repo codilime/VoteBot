@@ -21,8 +21,5 @@ class SlackClient:
     def post_chat_message(self, message: dict, text: str) -> SlackResponse:
         return self._client.chat_postMessage(**message, text=text)
 
-    def schedule_chat_message(self, channel: str, text: str, post_at: int) -> SlackResponse:
-        return self._client.chat_scheduleMessage(channel=channel, text=text, post_at=post_at)
-
     def users_list(self) -> SlackResponse:
         return self._client.users_list()

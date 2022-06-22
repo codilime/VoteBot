@@ -1,12 +1,11 @@
 import json
-from unittest import mock
 
 from django.test import override_settings
 
 from bot_app.events import KEYWORDS
-from bot_app.models import SlackProfile, SlackUser
+from bot_app.models import SlackUser
 from tests.base import BaseTestCase
-from tests.base import get_text_from_file
+from tests.data import get_text_from_file
 
 
 class TestEventEndpoint(BaseTestCase):
@@ -15,11 +14,7 @@ class TestEventEndpoint(BaseTestCase):
 
     def setUp(self) -> None:
         self._mock_slack_client()
-
-        self.profile1 = SlackProfile.objects.create(real_name="Test User 1")
-        self.slack_user1 = SlackUser.objects.create(
-            slack_id="slack_user1_id", name="test.user.1", profile=self.profile1
-        )
+        self.slack_user1 = SlackUser.objects.create(slack_id="slack_user1_id", name="test.user.1")
 
     @override_settings(SLACK_VERIFICATION_TOKEN=token)
     def test_slack_api_challenge(self) -> None:

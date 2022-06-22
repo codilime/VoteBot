@@ -2,7 +2,7 @@ import json
 
 from django.test import override_settings
 
-from bot_app.models import VotingResults
+from bot_app.models import Vote
 from tests.base import BaseTestCase
 
 
@@ -83,14 +83,14 @@ class TestInteractiveEndpoint(BaseTestCase):
             points_disrupt_to_grow=points_disrupt_to_grow,
         )
 
-        with self.assertRaises(VotingResults.DoesNotExist):
-            VotingResults.objects.latest("created")
+        with self.assertRaises(Vote.DoesNotExist):
+            Vote.objects.latest("created")
 
         response = self.client.post(self.url, data={"payload": json.dumps(vote_modal)})
         assert response.status_code == 200
 
-        vote = VotingResults.objects.latest("created")
-        assert vote.voting_user_id == self.slack_user1
+        vote = Vote.objects.latest("created")
+        assert vote.voting_user == self.slack_user1
         assert vote.voted_user == self.slack_user2
         assert vote.points_team_up_to_win == points_team_up_to_win
         assert vote.points_act_to_deliver == points_act_to_deliver
@@ -112,10 +112,10 @@ class TestInteractiveEndpoint(BaseTestCase):
 
         response = self.client.post(self.url, data={"payload": json.dumps(vote_modal)})
         assert response.status_code == 200
-        assert len(VotingResults.objects.all()) == 1
+        assert len(Vote.objects.all()) == 1
 
-        vote = VotingResults.objects.latest("created")
-        assert vote.voting_user_id == self.slack_user1
+        vote = Vote.objects.latest("created")
+        assert vote.voting_user == self.slack_user1
         assert vote.voted_user == self.slack_user2
         assert vote.points_team_up_to_win == points_team_up_to_win
         assert vote.points_act_to_deliver == points_act_to_deliver
