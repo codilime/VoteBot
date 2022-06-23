@@ -1,4 +1,4 @@
-from bot_app.utils import CATEGORIES
+from bot_app.models import CATEGORIES
 
 
 def _get_points_field(block_id: str, text: str, values: list) -> dict:

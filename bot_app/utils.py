@@ -7,19 +7,13 @@ from django.apps import apps
 from django.db.models import Sum
 
 from bot_app.apps import BotAppConfig
-from bot_app.client import SlackClient
-from bot_app.messages import get_text_message
+from bot_app.slack.client import SlackClient
+from bot_app.message import build_text_message
+from bot_app.models import Vote, SlackUser, CATEGORIES
 from bot_app.texts import texts
-from .models import Vote, SlackUser
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
-
-CATEGORIES = {
-    'points_team_up_to_win': "Team up to win",
-    "points_act_to_deliver": "Act to deliver",
-    "points_disrupt_to_grow": "Disrupt to grow",
-}
 
 
 def get_slack_client() -> SlackClient:
@@ -90,7 +84,7 @@ def total_points(start: datetime, end: datetime) -> dict:
 def send_about_message(user: SlackUser) -> None:
     greeting = texts.greeting(name=user.real_name)
     content = texts.about()
-    message = get_text_message(channel=user.slack_id, content=[greeting, content])
+    message = build_text_message(channel=user.slack_id, content=[greeting, content])
 
     client = get_slack_client()
     client.post_chat_message(message, text="Information about awards program.")

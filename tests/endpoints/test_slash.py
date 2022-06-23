@@ -2,11 +2,13 @@ import urllib.parse
 
 from django.http import HttpResponse
 from django.test import override_settings
+
 from bot_app.models import SlackUser
-from tests.base import BaseTestCase
+from tests.base import BaseTestCase, get_signature_headers
 from tests.data import get_slash_command_data, get_text_from_file
 
 
+@override_settings(SIGNING_SECRET='signing_secret')
 class TestSlashCommands(BaseTestCase):
     """ Simple cases testing if app properly responds to Slack's slash commands like /about. """
     token = 'very_important_slack_token'
@@ -16,10 +18,12 @@ class TestSlashCommands(BaseTestCase):
         self._add_simple_test_data()
 
     def _post_command(self, command: str, data: dict) -> HttpResponse:
+        data = urllib.parse.urlencode(data)
         return self.client.post(
             command,
-            data=urllib.parse.urlencode(data),
+            data=data,
             content_type="application/x-www-form-urlencoded",
+            **get_signature_headers(data=data)
         )
 
     @override_settings(SLACK_VERIFICATION_TOKEN=token)

@@ -1,7 +1,7 @@
 from django.apps import AppConfig
 from django.conf import settings
 
-from bot_app.client import SlackClient
+from bot_app.slack.client import SlackClient
 
 
 class BotAppConfig(AppConfig):

@@ -1,18 +1,19 @@
 import json
+import urllib.parse
 
 from django.test import override_settings
 
 from bot_app.models import Vote
-from tests.base import BaseTestCase
+from tests.base import BaseTestCase, get_signature_headers
 
 
 def get_sent_vote_modal(
-    token: str,
-    voting_user: str,
-    voted_user: str,
-    points_team_up_to_win: int,
-    points_act_to_deliver: int,
-    points_disrupt_to_grow: int,
+        token: str,
+        voting_user: str,
+        voted_user: str,
+        points_team_up_to_win: int,
+        points_act_to_deliver: int,
+        points_disrupt_to_grow: int,
 ) -> dict:
     return {
         "type": "view_submission",
@@ -59,6 +60,7 @@ def get_sent_vote_modal(
     }
 
 
+@override_settings(SIGNING_SECRET='signing_secret')
 class TestInteractiveEndpoint(BaseTestCase):
     url = "/interactive"
     token = "very_important_slack_token"
@@ -86,7 +88,14 @@ class TestInteractiveEndpoint(BaseTestCase):
         with self.assertRaises(Vote.DoesNotExist):
             Vote.objects.latest("created")
 
-        response = self.client.post(self.url, data={"payload": json.dumps(vote_modal)})
+        data = {"payload": json.dumps(vote_modal)}
+        data = urllib.parse.urlencode(data)
+        response = self.client.post(
+            self.url,
+            data=data,
+            content_type='application/x-www-form-urlencoded',
+            **get_signature_headers(data=data)
+        )
         assert response.status_code == 200
 
         vote = Vote.objects.latest("created")
@@ -110,7 +119,14 @@ class TestInteractiveEndpoint(BaseTestCase):
             points_disrupt_to_grow=points_disrupt_to_grow,
         )
 
-        response = self.client.post(self.url, data={"payload": json.dumps(vote_modal)})
+        data = {"payload": json.dumps(vote_modal)}
+        data = urllib.parse.urlencode(data)
+        response = self.client.post(
+            self.url,
+            data=data,
+            content_type='application/x-www-form-urlencoded',
+            **get_signature_headers(data=data)
+        )
         assert response.status_code == 200
         assert len(Vote.objects.all()) == 1
 

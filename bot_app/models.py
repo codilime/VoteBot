@@ -1,5 +1,11 @@
 from django.db import models
 
+CATEGORIES = {
+    'points_team_up_to_win': "Team up to win",
+    "points_act_to_deliver": "Act to deliver",
+    "points_disrupt_to_grow": "Disrupt to grow",
+}
+
 
 class SlackUser(models.Model):
     slack_id = models.CharField(unique=True, max_length=64)

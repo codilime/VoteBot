@@ -1,5 +1,11 @@
 A [Slack](https://slack.com) vote bot.
 
+# TODO:
+- Draws are not handled in any way (print all of them in message)
+- Switch DB engine from SQLite to PostgreSQL
+- Docker + docker-compose (app + DB)
+- CI/CD
+- Deploy to test environment
 
 ## Usage
 

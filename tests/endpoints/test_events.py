@@ -2,12 +2,13 @@ import json
 
 from django.test import override_settings
 
-from bot_app.events import KEYWORDS
+from bot_app.slack.events import KEYWORDS
 from bot_app.models import SlackUser
-from tests.base import BaseTestCase
+from tests.base import BaseTestCase, get_signature_headers
 from tests.data import get_text_from_file
 
 
+@override_settings(SIGNING_SECRET='signing_secret')
 class TestEventEndpoint(BaseTestCase):
     url = '/event/hook/'
     token = 'very_important_slack_token'
@@ -20,11 +21,13 @@ class TestEventEndpoint(BaseTestCase):
     def test_slack_api_challenge(self) -> None:
         challenge = 'slack_challenge'
         event_data = {'token': self.token, 'challenge': challenge, 'type': 'url_verification'}
+        data = json.dumps(event_data)
 
         response = self.client.post(
             self.url,
-            data=json.dumps(event_data),
-            content_type="application/json",
+            data=data,
+            content_type='application/json',
+            **get_signature_headers(data=data)
         )
         assert response.status_code == 200
 
@@ -48,12 +51,14 @@ class TestEventEndpoint(BaseTestCase):
             },
             'type': 'event_callback',
         }
+        data = json.dumps(event_data)
         text = get_text_from_file(filename='about')
 
         response = self.client.post(
             self.url,
-            data=json.dumps(event_data),
-            content_type="application/json",
+            data=data,
+            content_type='application/json',
+            **get_signature_headers(data=data)
         )
         assert response.status_code == 200
 
@@ -75,7 +80,8 @@ class TestEventEndpoint(BaseTestCase):
         response = self.client.post(
             self.url,
             data=data,
-            content_type="application/json",
+            content_type='application/json',
+            **get_signature_headers(data=data)
         )
         assert response.status_code == 400
 
@@ -85,11 +91,13 @@ class TestEventEndpoint(BaseTestCase):
             'token': 'definitely_not_a_valid_token',
             'event': {},
         }
+        data = json.dumps(event_data)
 
         response = self.client.post(
             self.url,
-            data=json.dumps(event_data),
-            content_type="application/json",
+            data=data,
+            content_type='application/json',
+            **get_signature_headers(data=data)
         )
         assert response.status_code == 400
 
@@ -99,10 +107,12 @@ class TestEventEndpoint(BaseTestCase):
             'token': self.token,
             'not_an_event': True,
         }
+        data = json.dumps(event_data)
 
         response = self.client.post(
             self.url,
-            data=json.dumps(event_data),
-            content_type="application/json",
+            data=data,
+            content_type='application/json',
+            **get_signature_headers(data=data)
         )
         assert response.status_code == 400

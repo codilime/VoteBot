@@ -1,8 +1,8 @@
 from django.urls import path
 
-from .events import slack_events
-from .interactive import interactive
-from .slash import (
+from bot_app.views.events import slack_event
+from bot_app.views.interactive import interactive
+from bot_app.views.slash import (
     vote,
     check_votes,
     check_points,
@@ -18,5 +18,5 @@ urlpatterns = [
     path("check-winners", check_winners, name="check_winner_month"),
 
     path("interactive", interactive, name="interactive"),
-    path("event/hook/", slack_events, name="slack_events"),
+    path("event/hook/", slack_event, name="slack_events"),
 ]

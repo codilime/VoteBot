@@ -1,10 +1,14 @@
+import time
+from typing import Any
 from unittest import mock
 
 from django.apps import apps
 from django.test import TestCase
 
 from bot_app.apps import BotAppConfig
-from bot_app.models import SlackUser, Vote
+from bot_app.hmac import hash_data
+from bot_app.models import SlackUser
+from bot_app.models import Vote
 
 
 class BaseTestCase(TestCase):
@@ -24,3 +28,13 @@ class BaseTestCase(TestCase):
                 points_act_to_deliver=1,
                 points_disrupt_to_grow=2,
             )
+
+
+def get_signature_headers(data: Any) -> dict:
+    timestamp = int(time.time())
+    hash_string = f'v0:{timestamp}:{data}'
+    signature = f'v0={hash_data(data=hash_string)}'
+    return dict(
+        HTTP_X_Slack_Request_Timestamp=timestamp,
+        HTTP_X_Slack_Signature=signature,
+    )

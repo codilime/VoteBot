@@ -9,16 +9,14 @@ if os.path.isfile(dotenv_file):
     dotenv.load_dotenv(dotenv_file)
 
 SECRET_KEY = os.environ.get("SECRET_KEY", default="KEY")
-
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SIGNING_SECRET = os.environ.get("SIGNING_SECRET")
-SLACK_VERIFICATION_TOKEN = os.environ.get("SLACK_VERIFICATION_TOKEN")
 
 ENABLE_SCHEDULER = os.environ.get("ENABLE_SCHEDULER") == '1'
 
-ALLOWED_HOSTS = ['*']
+DEBUG = os.environ.get("DEBUG") == "1" or False
 
-DEBUG = True
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'grappelli',

@@ -1,13 +1,12 @@
 import calendar
 from datetime import datetime
 
-from bot_app.models import SlackUser, Vote
+from bot_app.models import SlackUser, Vote, CATEGORIES
 from bot_app.texts import texts
 from bot_app.utils import (
     get_slack_client,
     get_start_end_month,
     get_winners_message,
-    CATEGORIES,
 )
 
 
