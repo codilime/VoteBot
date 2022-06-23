@@ -73,7 +73,7 @@ _points_fields = [
 ]
 
 
-def get_voting_modal() -> dict:
+def build_voting_modal() -> dict:
     return {
         "type": "modal",
         "title": {"type": "plain_text", "text": "Voting", "emoji": True},

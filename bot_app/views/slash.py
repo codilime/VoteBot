@@ -11,7 +11,7 @@ from django.views.decorators.http import require_http_methods
 from bot_app.forms import UserForm, TriggerForm
 from bot_app.hmac import verify_request
 from bot_app.message import build_text_message
-from bot_app.modals import get_voting_modal
+from bot_app.modals.vote import build_voting_modal
 from bot_app.models import SlackUser, CATEGORIES
 from bot_app.texts import texts
 from bot_app.utils import calculate_points, get_start_end_month, get_winners_message, get_slack_client, get_your_votes, \
@@ -35,7 +35,7 @@ def vote(request):
         return HttpResponseBadRequest(errors)
 
     client = get_slack_client()
-    client.open_view(trigger_id=form.cleaned_data['trigger_id'], view=get_voting_modal())
+    client.open_view(trigger_id=form.cleaned_data['trigger_id'], view=build_voting_modal())
     return HttpResponse()
 
 
