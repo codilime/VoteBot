@@ -1,136 +1,112 @@
-A [Slack](https://slack.com) vote bot.
+# CodiLime's vote bot for [Slack](https://slack.com)
 
-# TODO:
+This bot allows to grant points to other users. Points can be granted in 3 categories,
+accordingly to CodiLime's Manifesto:
+- Team up to win
+- Act to deliver
+- Disrupt to grow
+
+## TODO:
+- Greeting in every message is irritating...
 - Draws are not handled in any way (print all of them in message)
-- Switch DB engine from SQLite to PostgreSQL
+- Split dependencies to prod and dev, preferably use [poetry](https://github.com/python-poetry/poetry)
 - Docker + docker-compose (app + DB)
 - CI/CD
 - Deploy to test environment
 
-## Usage
-
-### Generate the slack api token
-
-First you need to get the slack api token for your bot. You have two options:
-
-1. If you use a [bot user integration](https://api.slack.com/bot-users) of slack, you can get the api token on the integration page.
-2. If you use a real slack user, you can generate an api token on [slack web api page](https://api.slack.com/web).
-
-
-### Testing area
-You can use our chanel for [testing bot](https://join.slack.com/t/programwyrniebot/shared_invite/zt-1ac7mt2iu-1VCqoLW6sHnave~Jur8AeQ).
-
-
-### Configure the bot
-First create a `.env` file in your own instance of slackbot.
-
-#### Complete the file as below:
-
-
-Then you need to configure the `TOKENS` in a `.env` file, which must be located in a main directory. This will be automatically used by the bot.
-
-.env:
+## Setup
+### Before the first run:
+- You'll need a Slack workspace to work on with your instance of bot. You can create a new one or invite yourself to our [test workspace](https://join.slack.com/t/programwyrniebot/shared_invite/zt-1ac7mt2iu-1VCqoLW6sHnave~Jur8AeQ).
+- Create account on [Slack API](https://api.slack.com/), create a new app from scratch, pick a workspace on which you want to install your app.
+- Go to ***OAuth & Permissions*** and set bellow scopes in ***Bot Token Scopes***:
 ```
-SECRET_KEY=<django-secret-key>
-SLACK_BOT_TOKEN=<your-slack-token>
-SIGNING_SECRET=<your-key>
-SLACK_VERIFICATION_TOKEN=<your-slack-verification-token>
+channels:history
+chat:write
+commands
+users:read
+```
+- Scroll up and click ***Install to Workspace***, after installation you should receive ***Bot User OAuth Token*** in `xoxb-...` format
+- After that you can either run app locally or from Docker container.
+
+### Local run
+- Create new, empty PostgreSQL database
+- In project's root create `.env` file:
+```
+SECRET_KEY=[django secret key, unique and unpredictable value, whatever you come up with]
+DB_URL=database url in postgres://USER:PASSWORD@127.0.0.1:5432/DATABASE format
+
+SIGNING_SECRET=[Signing Secret from Slack API -> Basic Information -> App Credentials section]
+SLACK_BOT_TOKEN=[xoxb Bot User OAuth Token from Slack API -> Install App section]
 
 ENABLE_SCHEDULER=0
 ```
-You can find the token in the Basic Information tab.
-
-![alt text](https://github.com/codilime/VoteBot/blob/main/slack%202.png)
-
-### Setup - type in terminal
-
-```commandline
-pip install -r requirements.txt
-python manage.py makemigrations
+- With all that complete you should be able to run migrations and your app:
+```shell
 python manage.py migrate
-```
+python manage.py createsuperuser
 
-### Run django app
-```commandline
 python manage.py runserver
 ```
+- App should start, but for full functionality you'll have to [set up endpoints in Slack API](#endpoints).
 
-### Configure base URL
-You need login to [spack api panel](https://api.slack.com/apps) and change base url for endpoints. 
-Change base url in categories. You can use Ngrok to generate url for tests. 
-![alt text](https://github.com/codilime/VoteBot/blob/r_buczynski/slack%201.png)
+### Docker run
+TODO
 
-
-### Endpoints for Slash Commands
-```commandline
-    /vote - Type '/vote' to receive a form where you can vote in the award program.
-    /about - Type '/about' to receive information about the awards program.
-    /check-votes - Type '/check-votes' to check how you voted. 
-    /check-points - Type '/check-points' to know how many points you have received.
-    /check-winner-month - Type '/check-winner-month' to know who win award program in current month.
+## Endpoints
+Endpoints to handle user's slash commands:
+``` 
+/about - information about the awards program
+/vote - show voting form
+/check-votes - check your previous votes from this month 
+/check-points - check points you received this month
+/check-winners - check this month's winner, if you have permissions
 ```
-You can manage slash method in the Slash Commands tab.
-![alt text](https://github.com/codilime/VoteBot/blob/main/slack%203.png)
-
-
-### Endpoints for Event Subscriptions
-```commandline
-    /event/hook/ - is a url using for handle events on slack chanels. 
-    It is possible to change the scope of permissions in the slack api panel. 
-    All events is handle by one url. 
-    Your app can subscribe to be notified of events in Slack (for example, 
-    when a user adds a reaction or creates a file) at a URL you choose.
+Other endpoints, required for app's functionality:
 ```
-Remember to enable events on slack api page.
-![alt text](https://github.com/codilime/VoteBot/blob/main/slack%204.png)
-
-
-### Endpoints for Interactivity & Shortcuts
-```commandline
-    /interactive - Interactivity - Any interactions with shortcuts, 
-    modals, or interactive components (such as buttons, select menus, and datepickers) 
-    will be sent to a URL you specify.
+/interactive - handle interactions with modals, buttons, etc., in our case receive subbmited voting modal
+/event/hook/ - handle miscellaneous events, like somebody mentioning our awards program in a message
 ```
+### Local proxy
+For all of this to work our app has to be visible to the world (and Slack API). To achieve that Slack documentation recommends 
+[to use Ngrok as a local proxy](https://api.slack.com/start/building/bolt-python#ngrok).
+Only change being to run it on the same port that our app is running now (probably `8000`).   
+Having forwarded ngrok URL from `https://abcd-01-23-45-678.eu.ngrok.io` to our machine we can set up endpoints in the Slack API.
 
-
-### Sending reminders
-The application automatically sends voting reminders in the middle and on the last day of the month.
-send_reminder
-
-On the first day of each month, information about the voting results in the previous month is sent.
-
-
-### Database
-After the migration is prepared and performed, the database with tables is ready.
-These commands prepared the database.
-```commandline
-python manage.py makemigrations
-python manage.py migrate
+### Slash commands
+For slash commands to work you have to create each command in the ***Slash Commands*** tab. 
+Any commands that were not added will not work. To add `/about` command you'd have to set it up like this:
 ```
-
-You can use admin panel to manage data.
-To do this, create a user in the terminal.
-```commandline
-python manage.py createsuperuser
+Command: /about
+Request URL: https://abcd-01-23-45-678.eu.ngrok.io/about
+Short description: Description of awards program.
 ```
-Then open /admin/ in your browser and log in.
-You can manage all data in builtin panel. 
+![Setting slash commands](readme/slash_commands.png)
 
-You can serialize your data to protect against data loss. 
-To do this type in terminal
-```commandline
-python manage.py dumpdata bot_app.SlackProfile --indent 2 --output bot_app/fixtures/slack_profile.json
-python manage.py dumpdata bot_app.SlackUser --indent 2 --output bot_app/fixtures/slack_user.json
-python manage.py dumpdata bot_app.VotingResults --indent 2 --output bot_app/fixtures/voting_results.json
+### Interactive (receiving votes)
+To enable voting you have to set up `/vote` slash command and enable interactivity for your app.
+To enable interactivity you have to go to ***Interactivity & Shortcuts*** tab, toggle the switch
+and add your local proxy endpoint: `https://abcd-01-23-45-678.eu.ngrok.io/interactive`
+![Adding interactivity](readme/interactive.png)
+
+### Events (reacting for messages)
+To enable events you have to go to ***Events Subscriptions*** tab, toggle the switch
+and add your local proxy endpoint: `https://abcd-01-23-45-678.eu.ngrok.io/event/hook/`. 
+App has to be running to allow Slack to check the endpoint, and **trailing slash is important!**  
+After that you'll have to add new event `message.channels` in ***Subscribe to bot events*** and save changes.
+![Enabling events](readme/events.png)
+
+## Scheduler
+TODO
+
+## Checking this month's winner
+TODO
+
+## Running tests
+Everything should just run. Without The `.env` file, without Slack API configuration, etc.:
 ```
-
-You can insert test data from fixtures directory. 
-```commandline
-python manage.py check
-python manage.py makemigrations
-python manage.py migrate
-python manage.py loaddata slack_profile.json
-python manage.py loaddata slack_user.json
-python manage.py loaddata voting_results.json
+python manage.py test
 ```
-
+To check tests coverage run:
+```
+coverage run --source='./bot_app' manage.py test --verbosity=3 && coverage report -m
+```

@@ -82,20 +82,24 @@ def create_users_from_slack() -> None:
     result = client.users_list()
 
     for data in result.data.get("members", []):
+        slack_id = data["id"]
+        name = data["name"]
+        real_name = data.get("real_name") or name
+        deleted = data.get("deleted") or False
+        is_bot = data.get('is_bot') or False
+
         if user := SlackUser.objects.filter(slack_id=data["id"]).first():
-            user.slack_id = data["id"]
-            user.name = data["name"]
-            user.real_name = data["real_name"]
-            user.deleted = data["deleted"]
-            user.is_bot = data["is_bot"]
-            user.updated = data["updated"]
+            user.slack_id = slack_id
+            user.name = name
+            user.real_name = real_name
+            user.deleted = deleted
+            user.is_bot = is_bot
         else:
             user = SlackUser.objects.create(
-                slack_id=data["id"],
-                name=data["name"],
-                real_name=data["real_name"],
-                deleted=data["deleted"],
-                is_bot=data["is_bot"],
-                updated=data["updated"],
+                slack_id=slack_id,
+                name=name,
+                real_name=real_name,
+                deleted=deleted,
+                is_bot=is_bot,
             )
         user.save()

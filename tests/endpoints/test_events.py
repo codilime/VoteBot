@@ -17,7 +17,6 @@ class TestEventEndpoint(BaseTestCase):
         self._mock_slack_client()
         self.slack_user1 = SlackUser.objects.create(slack_id="slack_user1_id", name="test.user.1")
 
-    @override_settings(SLACK_VERIFICATION_TOKEN=token)
     def test_slack_api_challenge(self) -> None:
         challenge = 'slack_challenge'
         event_data = {'token': self.token, 'challenge': challenge, 'type': 'url_verification'}
@@ -34,7 +33,6 @@ class TestEventEndpoint(BaseTestCase):
         data = response.json()
         assert data['challenge'] == challenge
 
-    @override_settings(SLACK_VERIFICATION_TOKEN=token)
     def test_keyword_event(self) -> None:
         channel = 'some_channel_id'
         thread = 'some_thread_id'
@@ -85,7 +83,6 @@ class TestEventEndpoint(BaseTestCase):
         )
         assert response.status_code == 400
 
-    @override_settings(SLACK_VERIFICATION_TOKEN=token)
     def test_invalid_token(self):
         event_data = {
             'token': 'definitely_not_a_valid_token',
@@ -101,7 +98,6 @@ class TestEventEndpoint(BaseTestCase):
         )
         assert response.status_code == 400
 
-    @override_settings(SLACK_VERIFICATION_TOKEN=token)
     def test_invalid_event(self):
         event_data = {
             'token': self.token,

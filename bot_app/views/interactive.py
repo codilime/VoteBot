@@ -7,8 +7,8 @@ from django.views.decorators.http import require_http_methods
 
 from bot_app.hmac import verify_request
 from bot_app.models import SlackUser, CATEGORIES
-from bot_app.views.slash import logger
 from bot_app.utils import save_vote
+from bot_app.views.slash import logger
 
 
 @csrf_exempt
@@ -17,7 +17,7 @@ from bot_app.utils import save_vote
 def interactive(request):
     """ Endpoint for receiving interactivity requests from Slack. Currently, handles submitted voting form. """
     try:
-        data = json.loads(request.POST.get('payload', ''))  # TODO Use schema?
+        data = json.loads(request.POST.get('payload', ''))
     except json.JSONDecodeError as e:
         return HttpResponseBadRequest(e)
 

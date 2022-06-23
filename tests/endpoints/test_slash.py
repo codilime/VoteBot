@@ -26,7 +26,6 @@ class TestSlashCommands(BaseTestCase):
             **get_signature_headers(data=data)
         )
 
-    @override_settings(SLACK_VERIFICATION_TOKEN=token)
     def test_about(self) -> None:
         command = "/about"
         data = get_slash_command_data(command=command, token=self.token, user_id=self.slack_user1.slack_id)
@@ -42,7 +41,6 @@ class TestSlashCommands(BaseTestCase):
         content = [c.get('text', {}).get('text') for c in call_args["blocks"]]
         assert text in content
 
-    @override_settings(SLACK_VERIFICATION_TOKEN=token)
     def test_vote(self) -> None:
         command = "/vote"
         data = get_slash_command_data(command=command, token=self.token, user_id=self.slack_user1.slack_id)
@@ -55,7 +53,6 @@ class TestSlashCommands(BaseTestCase):
         assert call_args["trigger_id"] == data["trigger_id"]
         # TODO validate view?
 
-    @override_settings(SLACK_VERIFICATION_TOKEN=token)
     def test_check_votes(self) -> None:
         your_votes_text = f"""Użytkownikowi {self.slack_user2.name} przyznano:
 {self.voting_result.points_team_up_to_win} w kategorii Team up to win
@@ -73,7 +70,6 @@ class TestSlashCommands(BaseTestCase):
         assert self.slack_user1.real_name.split(' ')[0] in str(call_args['blocks'][0])
         assert call_args['blocks'][1]['text']['text'] == your_votes_text
 
-    @override_settings(SLACK_VERIFICATION_TOKEN=token)
     def test_check_points(self) -> None:
         your_points_text = f"""Masz {self.voting_result.points_team_up_to_win} punktów w kategorii Team up to win.
 Masz {self.voting_result.points_act_to_deliver} punktów w kategorii Act to deliver.
@@ -92,7 +88,6 @@ Masz {self.voting_result.points_disrupt_to_grow} punktów w kategorii Disrupt to
         msg = call_args['blocks'][1]['text']['text']
         assert msg == your_points_text
 
-    @override_settings(SLACK_VERIFICATION_TOKEN=token)
     def test_check_winners(self) -> None:
         winners_text = f"""Wyniki głosowania w programie wyróżnień:
 W kategorii Team up to win mając {self.voting_result.points_team_up_to_win} głosów wygrywa {self.slack_user1.real_name}.
@@ -113,7 +108,6 @@ W kategorii Disrupt to grow mając {self.voting_result.points_disrupt_to_grow} g
         msg = call_args['blocks'][1]['text']['text']
         assert msg == winners_text
 
-    @override_settings(SLACK_VERIFICATION_TOKEN=token)
     def test_forbidden_check_winners(self) -> None:
         command = "/check-winners"
         data = get_slash_command_data(command=command, token=self.token, user_id=self.slack_user1.slack_id)

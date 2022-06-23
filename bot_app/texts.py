@@ -63,5 +63,11 @@ class TextsBuilder:
         lines = self._fill_lines(line=line, values=values)
         return f'{header}\n{lines}'
 
+    def you_have_not_voted(self) -> str:
+        return self._sources['you_have_not_voted']
+
+    def no_permissions(self) -> str:
+        return self._sources['no_permissions']
+
 
 texts = TextsBuilder(sources=TextsSources())

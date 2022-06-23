@@ -69,7 +69,6 @@ class TestInteractiveEndpoint(BaseTestCase):
         self._mock_slack_client()
         self._add_simple_test_data(add_voting=False)
 
-    @override_settings(SLACK_VERIFICATION_TOKEN=token)
     def test_vote(self) -> None:
         # Save new vote.
         points_team_up_to_win = 0

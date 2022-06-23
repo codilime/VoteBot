@@ -4,7 +4,7 @@ support voting in the award program.
 """
 import logging
 
-from django.http import HttpResponse, HttpRequest, HttpResponseBadRequest, HttpResponseForbidden
+from django.http import HttpResponse, HttpRequest, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
@@ -56,8 +56,8 @@ def check_votes(request):
         return HttpResponseBadRequest('User does not exist.')
 
     greeting = texts.greeting(name=user.real_name)
-    votes = get_your_votes(user=user)
-    message = build_text_message(channel=user.slack_id, content=[greeting, '\n\n'.join(votes)])
+    votes_text = get_your_votes(user=user)
+    message = build_text_message(channel=user.slack_id, content=[greeting, votes_text])
 
     client = get_slack_client()
     client.post_chat_message(message, text="Check points you've given in the current month.")
@@ -113,11 +113,12 @@ def check_winners(request):
         return HttpResponseBadRequest('User does not exist.')
 
     if not user.is_hr:
-        return HttpResponseForbidden('Only HR users can check winners.')  # TODO reply on slack
+        content = texts.no_permissions()
+    else:
+        start, end = get_start_end_month()
+        content = get_winners_message(start=start, end=end)
 
-    start, end = get_start_end_month()
     greeting = texts.greeting(name=user.real_name)
-    content = get_winners_message(start=start, end=end)
     message = build_text_message(channel=user.slack_id, content=[greeting, content])
 
     client = get_slack_client()

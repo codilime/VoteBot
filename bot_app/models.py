@@ -15,7 +15,6 @@ class SlackUser(models.Model):
     is_bot = models.BooleanField(default=False)
     deleted = models.BooleanField(default=False)
     created = models.DateTimeField(auto_now_add=True)
-    updated = models.SmallIntegerField(default=0)
 
     def __str__(self):
         return f"{self.slack_id} {self.name}"

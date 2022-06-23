@@ -7,9 +7,9 @@ from django.apps import apps
 from django.db.models import Sum
 
 from bot_app.apps import BotAppConfig
-from bot_app.slack.client import SlackClient
 from bot_app.message import build_text_message
 from bot_app.models import Vote, SlackUser, CATEGORIES
+from bot_app.slack.client import SlackClient
 from bot_app.texts import texts
 
 logger = logging.getLogger(__name__)
@@ -163,12 +163,15 @@ def save_vote(vote: dict, user_id: str) -> None:
         )
 
 
-def get_your_votes(user: SlackUser) -> list[str]:
+def get_your_votes(user: SlackUser) -> str:
     current_month = get_start_end_month()
     votes = list(Vote.objects.filter(
         voting_user=user,
         created__range=current_month,
     ))
+
+    if not votes:
+        return texts.you_have_not_voted()
 
     users_votes = []
     for vote in votes:
@@ -176,4 +179,4 @@ def get_your_votes(user: SlackUser) -> list[str]:
         for field, category in CATEGORIES.items():
             points.append({'category': category, 'points': getattr(vote, field)})
         users_votes.append(texts.your_vote(values={'user': vote.voted_user.name, 'points': points}))
-    return users_votes
+    return '\n\n'.join(users_votes)
