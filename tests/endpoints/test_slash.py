@@ -11,7 +11,6 @@ from tests.data import get_slash_command_data, get_text_from_file
 @override_settings(SIGNING_SECRET='signing_secret')
 class TestSlashCommands(BaseTestCase):
     """ Simple cases testing if app properly responds to Slack's slash commands like /about. """
-    token = 'very_important_slack_token'
 
     def setUp(self) -> None:
         self._mock_slack_client()
@@ -28,7 +27,7 @@ class TestSlashCommands(BaseTestCase):
 
     def test_about(self) -> None:
         command = "/about"
-        data = get_slash_command_data(command=command, token=self.token, user_id=self.slack_user1.slack_id)
+        data = get_slash_command_data(command=command,  user_id=self.slack_user1.slack_id)
         text = get_text_from_file(filename='about')
 
         response = self._post_command(command=command, data=data)
@@ -43,7 +42,7 @@ class TestSlashCommands(BaseTestCase):
 
     def test_vote(self) -> None:
         command = "/vote"
-        data = get_slash_command_data(command=command, token=self.token, user_id=self.slack_user1.slack_id)
+        data = get_slash_command_data(command=command,  user_id=self.slack_user1.slack_id)
 
         response = self._post_command(command=command, data=data)
         assert response.status_code == 200
@@ -59,7 +58,7 @@ class TestSlashCommands(BaseTestCase):
 {self.voting_result.points_act_to_deliver} w kategorii Act to deliver
 {self.voting_result.points_disrupt_to_grow} w kategorii Disrupt to grow"""
         command = "/check-votes"
-        data = get_slash_command_data(command=command, token=self.token, user_id=self.slack_user1.slack_id)
+        data = get_slash_command_data(command=command,  user_id=self.slack_user1.slack_id)
 
         response = self._post_command(command=command, data=data)
         assert response.status_code == 200
@@ -75,7 +74,7 @@ class TestSlashCommands(BaseTestCase):
 Masz {self.voting_result.points_act_to_deliver} punktów w kategorii Act to deliver.
 Masz {self.voting_result.points_disrupt_to_grow} punktów w kategorii Disrupt to grow."""
         command = "/check-points"
-        data = get_slash_command_data(command=command, token=self.token, user_id=self.slack_user2.slack_id)
+        data = get_slash_command_data(command=command,  user_id=self.slack_user2.slack_id)
 
         response = self._post_command(command=command, data=data)
         assert response.status_code == 200
@@ -96,7 +95,7 @@ W kategorii Disrupt to grow mając {self.voting_result.points_disrupt_to_grow} g
 
         hr_user1 = SlackUser.objects.create(slack_id="hr_user1_id", name="hr.user.1", is_hr=True)
         command = "/check-winners"
-        data = get_slash_command_data(command=command, token=self.token, user_id=hr_user1.slack_id)
+        data = get_slash_command_data(command=command,  user_id=hr_user1.slack_id)
 
         response = self._post_command(command=command, data=data)
         assert response.status_code == 200
@@ -109,8 +108,16 @@ W kategorii Disrupt to grow mając {self.voting_result.points_disrupt_to_grow} g
         assert msg == winners_text
 
     def test_forbidden_check_winners(self) -> None:
+        text = get_text_from_file(filename='no_permissions')
         command = "/check-winners"
-        data = get_slash_command_data(command=command, token=self.token, user_id=self.slack_user1.slack_id)
+        data = get_slash_command_data(command=command,  user_id=self.slack_user1.slack_id)
 
         response = self._post_command(command=command, data=data)
-        assert response.status_code == 403
+        assert response.status_code == 200
+
+        self.slack_client_mock.chat_postMessage.assert_called_once()
+        call_args = self.slack_client_mock.chat_postMessage.call_args[1]
+        assert call_args["channel"] == self.slack_user1.slack_id
+
+        msg = call_args['blocks'][1]['text']['text']
+        assert msg == text

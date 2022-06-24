@@ -8,7 +8,6 @@ from tests.base import BaseTestCase, get_signature_headers
 
 
 def get_sent_vote_modal(
-        token: str,
         voting_user: str,
         voted_user: str,
         points_team_up_to_win: int,
@@ -20,7 +19,6 @@ def get_sent_vote_modal(
         "user": {
             "id": voting_user,
         },
-        "token": token,
         "view": {
             "state": {
                 "values": {
@@ -63,7 +61,6 @@ def get_sent_vote_modal(
 @override_settings(SIGNING_SECRET='signing_secret')
 class TestInteractiveEndpoint(BaseTestCase):
     url = "/interactive"
-    token = "very_important_slack_token"
 
     def setUp(self) -> None:
         self._mock_slack_client()
@@ -76,7 +73,6 @@ class TestInteractiveEndpoint(BaseTestCase):
         points_disrupt_to_grow = 2
 
         vote_modal = get_sent_vote_modal(
-            token=self.token,
             voting_user=self.slack_user1.slack_id,
             voted_user=self.slack_user2.slack_id,
             points_team_up_to_win=points_team_up_to_win,
@@ -110,7 +106,6 @@ class TestInteractiveEndpoint(BaseTestCase):
         points_disrupt_to_grow = 0
 
         vote_modal = get_sent_vote_modal(
-            token=self.token,
             voting_user=self.slack_user1.slack_id,
             voted_user=self.slack_user2.slack_id,
             points_team_up_to_win=points_team_up_to_win,

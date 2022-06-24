@@ -3,7 +3,7 @@ from os import listdir
 
 class TextsSources:
     """ On app's startup loads all predefined messages that can be later sent to users. """
-    _source = './texts/'
+    _source = './bot_app/texts/'
 
     def __init__(self):
         self._texts = {}

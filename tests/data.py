@@ -1,8 +1,7 @@
-def get_slash_command_data(command: str, token: str = None, user_id: str = None) -> dict:
+def get_slash_command_data(command: str, user_id: str = None) -> dict:
     return {
         "command": command,
         "text": "",
-        "token": token or "token",
         "team_id": "team_id",
         "team_domain": "team_domain",
         "channel_id": "channel_id",
@@ -17,7 +16,7 @@ def get_slash_command_data(command: str, token: str = None, user_id: str = None)
 
 
 def get_text_from_file(filename: str) -> str:
-    with open('./texts/' + filename) as f:
+    with open('./bot_app/texts/' + filename) as f:
         return f.read()
 
 
