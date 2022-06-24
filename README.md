@@ -9,6 +9,7 @@ accordingly to CodiLime's Manifesto:
 ## TODO:
 - Greeting in every message is irritating...
 - Draws are not handled in any way (print all of them in message)
+- Templates work only with DEBUG=True (is this some django quirk?)
 - Split dependencies to prod and dev, preferably use [poetry](https://github.com/python-poetry/poetry)
 - Docker + docker-compose (app + DB)
 - CI/CD
@@ -38,7 +39,8 @@ DB_URL=database url in postgres://USER:PASSWORD@127.0.0.1:5432/DATABASE format
 SIGNING_SECRET=[Signing Secret from Slack API -> Basic Information -> App Credentials section]
 SLACK_BOT_TOKEN=[xoxb Bot User OAuth Token from Slack API -> Install App section]
 
-ENABLE_SCHEDULER=0
+ENABLE_SCHEDULER=0    # Enable for production.
+DEBUG=1    # Disable for production.
 ```
 - With all that complete you should be able to run migrations and your app:
 ```shell
@@ -96,10 +98,18 @@ After that you'll have to add new event `message.channels` in ***Subscribe to bo
 ![Enabling events](readme/events.png)
 
 ## Scheduler
-TODO
+App has a scheduler that is responsible for running periodic jobs. It can send reminders, announce winners, sync users
+from slack, and so on. It's running in separate thread to not block the main application.    
+Scheduler's jobs can be edited in the `bot_app/scheduler/scheduler.py` file, in the `schedule_jobs` function.   
+Scheduler is disabled for development by default, but it should be enabled on production environment. 
+Set `ENABLE_SCHEDULER=1` environmental variable to enable the scheduler.
 
 ## Checking this month's winner
-TODO
+To check winners for current month use `/check-winners` slash command. Additionally, there is a job scheduled
+that will automatically post message about winners on the last day of the month.  
+Although to be possible for user to receive that message the checkbox `is hr` in the `/admin` has to be selected 
+for that user. Otherwise, the user will receive message about lacking the permissions to check winners.   
+![is_hr checkbox](readme/is_hr.png)
 
 ## Running tests
 Everything should just run. Without The `.env` file, without Slack API configuration, etc.:
