@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:14.4-bullseye
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=votebot
+    volumes:
+      - database:/var/lib/postgresql/data
+  vote-bot:
+    build: .
+    environment:
+      - SECRET_KEY
+      - DATABASE_URL
+      - SIGNING_SECRET
+      - SLACK_BOT_TOKEN
+      - ENABLE_SCHEDULER
+      - DEBUG
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+volumes:
+  database:

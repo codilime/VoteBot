@@ -1,9 +1,3 @@
-"""
-The module contains a collection of methods that
-support voting in the award program.
-"""
-import logging
-
 from django.http import HttpResponse, HttpRequest, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -15,12 +9,7 @@ from bot_app.modals.vote import build_voting_modal
 from bot_app.models import SlackUser, CATEGORIES
 from bot_app.texts import texts
 from bot_app.utils import calculate_points, get_start_end_month, get_winners_message, get_slack_client, get_your_votes, \
-    send_about_message
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
-
-info_channels = {}
+    send_about_message, logger
 
 
 @csrf_exempt
@@ -137,10 +126,13 @@ def about(request: HttpRequest) -> HttpResponse:
         logger.warning(errors)
         return HttpResponseBadRequest(errors)
 
+    user_id = form.cleaned_data['user_id']
     try:
-        user = SlackUser.objects.get(slack_id=form.cleaned_data['user_id'])
+        user = SlackUser.objects.get(slack_id=user_id)
     except SlackUser.DoesNotExist:
-        return HttpResponseBadRequest('User does not exist.')
+        msg = f'User {user_id} does not exist.'
+        logger.warning(msg)
+        return HttpResponseBadRequest(msg)
 
     send_about_message(user=user)
     return HttpResponse()

@@ -12,8 +12,9 @@ from bot_app.models import Vote, SlackUser, CATEGORIES
 from bot_app.slack.client import SlackClient
 from bot_app.texts import texts
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger()
+logging.basicConfig(level=logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 def get_slack_client() -> SlackClient:

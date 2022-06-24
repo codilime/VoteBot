@@ -11,11 +11,21 @@ accordingly to CodiLime's Manifesto:
 - Draws are not handled in any way (print all of them in message)
 - Templates work only with DEBUG=True (is this some django quirk?)
 - Split dependencies to prod and dev, preferably use [poetry](https://github.com/python-poetry/poetry)
-- Docker + docker-compose (app + DB)
 - CI/CD
 - Deploy to test environment
 
-## Setup
+## Running tests
+You need virtual env set, and requirements installed, and everything should just run. 
+Without the `.env` file, Slack API configuration, or rest of this readme:
+```
+python manage.py test
+```
+To check tests coverage run:
+```
+coverage run --source='./bot_app' manage.py test --verbosity=3 && coverage report -m
+```
+
+## Running app
 ### Before the first run:
 - You'll need a Slack workspace to work on with your instance of bot. You can create a new one or invite yourself to our [test workspace](https://join.slack.com/t/programwyrniebot/shared_invite/zt-1ac7mt2iu-1VCqoLW6sHnave~Jur8AeQ).
 - Create account on [Slack API](https://api.slack.com/), create a new app from scratch, pick a workspace on which you want to install your app.
@@ -34,7 +44,7 @@ users:read
 - In project's root create `.env` file:
 ```
 SECRET_KEY=[django secret key, unique and unpredictable value, whatever you come up with]
-DB_URL=database url in postgres://USER:PASSWORD@127.0.0.1:5432/DATABASE format
+DB_URL=your database url in postgres://USER:PASSWORD@127.0.0.1:5432/DATABASE format
 
 SIGNING_SECRET=[Signing Secret from Slack API -> Basic Information -> App Credentials section]
 SLACK_BOT_TOKEN=[xoxb Bot User OAuth Token from Slack API -> Install App section]
@@ -42,7 +52,7 @@ SLACK_BOT_TOKEN=[xoxb Bot User OAuth Token from Slack API -> Install App section
 ENABLE_SCHEDULER=0    # Enable for production.
 DEBUG=1    # Disable for production.
 ```
-- With all that complete you should be able to run migrations and your app:
+- With all that completed you should be able to run migrations and start the app:
 ```shell
 python manage.py migrate
 python manage.py createsuperuser
@@ -52,7 +62,23 @@ python manage.py runserver
 - App should start, but for full functionality you'll have to [set up endpoints in Slack API](#endpoints).
 
 ### Docker run
-TODO
+- In project's root create `.env` file:
+```
+SECRET_KEY=[django secret key, unique and unpredictable value, whatever you come up with]
+DB_URL=postgres://postgres:postgres@db:5432/DATABASE  # URL to db container.
+
+SIGNING_SECRET=[Signing Secret from Slack API -> Basic Information -> App Credentials section]
+SLACK_BOT_TOKEN=[xoxb Bot User OAuth Token from Slack API -> Install App section]
+
+ENABLE_SCHEDULER=0    # Enable for production.
+```
+- If it's the first run, or you removed `database` volume you have to migrate DB and create superuser first:
+```
+docker-compose run --entrypoint python vote-bot manage.py migrate
+docker-compose run --entrypoint python vote-bot manage.py createsuperuser
+```
+- After that use `docker-compose up` command to run the containers
+- App should start, but for full functionality you'll have to [set up endpoints in Slack API](#endpoints).
 
 ## Endpoints
 Endpoints to handle user's slash commands:
@@ -110,13 +136,3 @@ that will automatically post message about winners on the last day of the month.
 Although to be possible for user to receive that message the checkbox `is hr` in the `/admin` has to be selected 
 for that user. Otherwise, the user will receive message about lacking the permissions to check winners.   
 ![is_hr checkbox](readme/is_hr.png)
-
-## Running tests
-Everything should just run. Without The `.env` file, without Slack API configuration, etc.:
-```
-python manage.py test
-```
-To check tests coverage run:
-```
-coverage run --source='./bot_app' manage.py test --verbosity=3 && coverage report -m
-```

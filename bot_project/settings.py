@@ -15,10 +15,10 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://")
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SIGNING_SECRET = os.environ.get("SIGNING_SECRET")
 
-ENABLE_SCHEDULER = os.environ.get("ENABLE_SCHEDULER") == '1'
-
+ENABLE_SCHEDULER = os.environ.get("ENABLE_SCHEDULER") == '1' or False
 DEBUG = os.environ.get("DEBUG") == "1" or False
 
+VERSION = '1.0.0'
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [

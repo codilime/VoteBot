@@ -1,16 +1,13 @@
 from django.urls import path
 
 from bot_app.views.events import slack_event
+from bot_app.views.index import index
 from bot_app.views.interactive import interactive
-from bot_app.views.slash import (
-    vote,
-    check_votes,
-    check_points,
-    check_winners,
-    about,
-)
+from bot_app.views.slash import vote, check_votes, check_points, check_winners, about
 
 urlpatterns = [
+    path("", index, name="index"),
+
     path("about", about, name="about"),
     path("vote", vote, name="vote"),
     path("check-votes", check_votes, name="check_votes"),
