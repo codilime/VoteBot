@@ -2,7 +2,7 @@ from os import listdir
 
 
 class TextsSources:
-    """ On app's startup loads all predefined messages that can be later sent to users. """
+    """ On app's startup loads all predefined texts that can be later sent to users in messages. """
     _source = './bot_app/texts/'
 
     def __init__(self):
@@ -17,7 +17,7 @@ class TextsSources:
 
 
 class TextsBuilder:
-    """ Using predefined messages templates builds messages' texts that will be sent to users. """
+    """ Using predefined templates builds texts that will be sent to users. """
 
     def __init__(self, sources: TextsSources) -> None:
         self._sources = sources
@@ -45,22 +45,39 @@ class TextsBuilder:
 
     def your_vote(self, values: dict) -> str:
         """ @param values: {'user": str, "points": [{'category': str, 'points': int, 'user': str}]} dict. """
-        header, line = self._sources['your_votes'].split('\n')
+        header = self._sources['your_votes_header']
+        line = self._sources['points_in_category']
+
         header = header.format(user=values['user'])
         lines = self._fill_lines(line=line, values=values['points'])
         return f'{header}\n{lines}'
 
     def got_voted(self, values: dict) -> str:
         """ @param values: {'people": int, "points": [{'category': str, 'points': int}]} dict. """
-        header, line = self._sources['got_voted'].split('\n')
+        header = self._sources['got_voted']
+        line = self._sources['points_in_category']
+
         header = header.format(people=values['people'])
         lines = self._fill_lines(line=line, values=values['points'])
         return f'{header}\n{lines}'
 
     def announce_winners(self, values: list[dict]) -> str:
-        """ @param values: list of {'category': str, 'points': int, 'user': str} dicts. """
-        header, line = self._sources['announce_winners'].split('\n')
-        lines = self._fill_lines(line=line, values=values)
+        """ @param values: list of {'category': str, 'points': int, 'users': list[str]} dicts. """
+        header = self._sources['winners_header']
+        line = self._sources['winners_line']
+        draw = self._sources['winners_draw']
+
+        result = []
+        for line_values in values:
+            is_draw = True if len(line_values['user']) > 1 else False
+            line_values['user'] = ', '.join(line_values['user'])
+
+            if is_draw:
+                result.append(draw.format(**line_values))
+            else:
+                result.append(line.format(**line_values))
+
+        lines = '\n'.join(result)
         return f'{header}\n{lines}'
 
     def you_have_not_voted(self) -> str:

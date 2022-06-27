@@ -102,12 +102,30 @@ def get_winners_message(start: datetime, end: datetime) -> str:
     """
     users_points = total_points(start=start, end=end)
 
+    # Find winners and their points for each category.
+    categories_winners = {}.fromkeys(CATEGORIES.keys())
+    categories_points = {}.fromkeys(CATEGORIES.keys())
+    for category in CATEGORIES.keys():
+        winners = []
+        winners_points = 0
+
+        for user, values in users_points.items():
+            user_points = values[category]
+            if user_points > winners_points:
+                winners_points = user_points
+                winners = [user]
+            elif user_points == winners_points:
+                winners.append(user)
+
+        categories_winners[category] = winners
+        categories_points[category] = winners_points
+
+    # Generate winners message.
     winners_data = []
     for attr, category in CATEGORIES.items():
-        user = max(users_points, key=lambda v: users_points[v][attr])
-        points = users_points[user][attr]
-        user_name = get_user(user).real_name
-        winners_data.append(dict(category=category, points=points, user=user_name))
+        points = categories_points[attr]
+        users = [user.name for user in SlackUser.objects.filter(slack_id__in=categories_winners[attr], is_bot=False)]
+        winners_data.append(dict(category=category, points=points, user=users))
     return texts.announce_winners(values=winners_data)
 
 

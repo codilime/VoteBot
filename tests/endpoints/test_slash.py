@@ -54,9 +54,9 @@ class TestSlashCommands(BaseTestCase):
 
     def test_check_votes(self) -> None:
         your_votes_text = f"""Użytkownikowi {self.slack_user2.name} przyznano:
-{self.voting_result.points_team_up_to_win} w kategorii Team up to win
-{self.voting_result.points_act_to_deliver} w kategorii Act to deliver
-{self.voting_result.points_disrupt_to_grow} w kategorii Disrupt to grow"""
+• {self.voting_result.points_team_up_to_win} punktów w kategorii Team up to win
+• {self.voting_result.points_act_to_deliver} punktów w kategorii Act to deliver
+• {self.voting_result.points_disrupt_to_grow} punktów w kategorii Disrupt to grow"""
         command = "/check-votes"
         data = get_slash_command_data(command=command,  user_id=self.slack_user1.slack_id)
 
@@ -70,9 +70,9 @@ class TestSlashCommands(BaseTestCase):
         assert call_args['blocks'][1]['text']['text'] == your_votes_text
 
     def test_check_points(self) -> None:
-        your_points_text = f"""Masz {self.voting_result.points_team_up_to_win} punktów w kategorii Team up to win.
-Masz {self.voting_result.points_act_to_deliver} punktów w kategorii Act to deliver.
-Masz {self.voting_result.points_disrupt_to_grow} punktów w kategorii Disrupt to grow."""
+        your_points_text = f"""• masz {self.voting_result.points_team_up_to_win} punktów w kategorii Team up to win
+• masz {self.voting_result.points_act_to_deliver} punktów w kategorii Act to deliver
+• masz {self.voting_result.points_disrupt_to_grow} punktów w kategorii Disrupt to grow"""
         command = "/check-points"
         data = get_slash_command_data(command=command,  user_id=self.slack_user2.slack_id)
 
@@ -89,9 +89,9 @@ Masz {self.voting_result.points_disrupt_to_grow} punktów w kategorii Disrupt to
 
     def test_check_winners(self) -> None:
         winners_text = f"""Wyniki głosowania w programie wyróżnień:
-W kategorii Team up to win mając {self.voting_result.points_team_up_to_win} głosów wygrywa {self.slack_user1.real_name}.
-W kategorii Act to deliver mając {self.voting_result.points_act_to_deliver} głosów wygrywa {self.slack_user2.real_name}.
-W kategorii Disrupt to grow mając {self.voting_result.points_disrupt_to_grow} głosów wygrywa {self.slack_user2.real_name}."""
+• w kategorii Team up to win remis - 0 punktów: test.user.1, test.user.2, hr.user.1
+• w kategorii Act to deliver mając {self.voting_result.points_act_to_deliver} punktów wygrywa {self.slack_user2.name}
+• w kategorii Disrupt to grow mając {self.voting_result.points_disrupt_to_grow} punktów wygrywa {self.slack_user2.name}"""
 
         hr_user1 = SlackUser.objects.create(slack_id="hr_user1_id", name="hr.user.1", is_hr=True)
         command = "/check-winners"

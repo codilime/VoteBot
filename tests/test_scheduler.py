@@ -60,9 +60,9 @@ class TestSchedulerJobs(BaseTestCase):
 
     def test_announce_winners(self) -> None:
         winners_text = f"""Wyniki głosowania w programie wyróżnień:
-W kategorii Team up to win mając {self.voting_result.points_team_up_to_win} głosów wygrywa {self.slack_user1.real_name}.
-W kategorii Act to deliver mając {self.voting_result.points_act_to_deliver} głosów wygrywa {self.slack_user2.real_name}.
-W kategorii Disrupt to grow mając {self.voting_result.points_disrupt_to_grow} głosów wygrywa {self.slack_user2.real_name}."""
+• w kategorii Team up to win remis - 0 punktów: test.user.1, test.user.2, hr.user.1
+• w kategorii Act to deliver mając {self.voting_result.points_act_to_deliver} punktów wygrywa {self.slack_user2.name}
+• w kategorii Disrupt to grow mając {self.voting_result.points_disrupt_to_grow} punktów wygrywa {self.slack_user2.name}"""
 
         hr_user1 = SlackUser.objects.create(slack_id="hr_user1_id", name="hr.user.1", is_hr=True)
         announce_winners()
@@ -96,9 +96,9 @@ W kategorii Disrupt to grow mając {self.voting_result.points_disrupt_to_grow} g
 
     def test_new_points_notification(self) -> None:
         got_voted_text = f"""{Vote.objects.count()} osób zagłosowało dzisiaj na Ciebie! Sumarycznie przyznali Ci:
-{self.voting_result.points_team_up_to_win} punktów w kategorii Team up to win.
-{self.voting_result.points_act_to_deliver} punktów w kategorii Act to deliver.
-{self.voting_result.points_disrupt_to_grow} punktów w kategorii Disrupt to grow."""
+• {self.voting_result.points_team_up_to_win} punktów w kategorii Team up to win
+• {self.voting_result.points_act_to_deliver} punktów w kategorii Act to deliver
+• {self.voting_result.points_disrupt_to_grow} punktów w kategorii Disrupt to grow"""
 
         notify_about_new_points()
         assert (

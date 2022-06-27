@@ -1,14 +1,13 @@
 # CodiLime's vote bot for [Slack](https://slack.com)
 
 This bot allows to grant points to other users. Points can be granted in 3 categories,
-accordingly to CodiLime's Manifesto:
+accordingly to CodiLime Manifesto:
 - Team up to win
 - Act to deliver
 - Disrupt to grow
 
 ## TODO:
-- Greeting in every message is irritating...
-- Draws are not handled in any way (print all of them in message)
+- Greeting in every message is irritating...Rework texts in messages.
 - Templates work only with DEBUG=True (is this some django quirk?)
 - Split dependencies to prod and dev, preferably use [poetry](https://github.com/python-poetry/poetry)
 - CI/CD
