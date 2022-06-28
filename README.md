@@ -9,9 +9,23 @@ accordingly to CodiLime Manifesto:
 ## TODO:
 - Greeting in every message is irritating...Rework texts in messages.
 - Templates work only with DEBUG=True (is this some django quirk?)
-- Split dependencies to prod and dev, preferably use [poetry](https://github.com/python-poetry/poetry)
 - CI/CD
 - Deploy to test environment
+
+## Dependencies
+This repository uses [poetry](https://github.com/python-poetry/poetry) to manage dependencies.
+You can install dependencies from requirements txt files from `requirements` dir, as usual:
+```shell
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements/prod.txt
+```
+If you need to make any changes - use poetry to ensure control over dependencies. 
+Then if you wish to generate new, updated requirements txt files use:
+```shell
+poetry export --without-hashes --format=requirements.txt > requirements/prod.txt
+poetry export --without-hashes --format=requirements.txt > requirements/dev.txt --dev
+```
 
 ## Running tests
 You need virtual env set, and requirements installed, and everything should just run. 

@@ -14,7 +14,7 @@ ENV ENABLE_SCHEDULER=${ENABLE_SCHEDULER}
 
 WORKDIR /votebot
 
-COPY requirements.txt ./
+COPY requirements/prod.txt ./requirements.txt
 RUN pip install -r requirements.txt --no-cache-dir && \
     adduser lime && \
     chown -R lime /votebot
