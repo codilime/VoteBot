@@ -10,7 +10,8 @@ services:
     volumes:
       - database:/var/lib/postgresql/data
   vote-bot:
-    build: .
+    build:
+      target: production
     environment:
       - SECRET_KEY
       - DATABASE_URL

@@ -27,13 +27,16 @@ poetry export --without-hashes --format=requirements.txt > requirements/dev.txt 
 ```
 
 ## Running tests
-You need virtual env set, and requirements installed, and everything should just run. 
-Without the `.env` file, Slack API configuration, or rest of this readme:
+```shell
+ docker-compose -f docker-compose.tests.yaml up test-vote-bot --build
 ```
+Alternatively you can run tests with Python. You'll need virtual env set, and requirements installed, and with that
+everything should just run. Without the `.env` file, Slack API configuration, or rest of this readme:
+```shell
 python manage.py test
 ```
 To check tests coverage run:
-```
+```shell
 coverage run --source='./bot_app' manage.py test --verbosity=3 && coverage report -m
 ```
 
@@ -56,7 +59,7 @@ users:read
 - In project's root create `.env` file:
 ```
 SECRET_KEY=[django secret key, unique and unpredictable value, whatever you come up with]
-DB_URL=your database url in postgres://USER:PASSWORD@127.0.0.1:5432/DATABASE format
+DATABASE_URL=your database url in postgres://USER:PASSWORD@127.0.0.1:5432/DATABASE format
 
 SIGNING_SECRET=[Signing Secret from Slack API -> Basic Information -> App Credentials section]
 SLACK_BOT_TOKEN=[xoxb Bot User OAuth Token from Slack API -> Install App section]
@@ -77,7 +80,7 @@ python manage.py runserver
 - In project's root create `.env` file:
 ```
 SECRET_KEY=[django secret key, unique and unpredictable value, whatever you come up with]
-DB_URL=postgres://postgres:postgres@db:5432/DATABASE  # URL to db container.
+DATABASE_URL=postgres://postgres:postgres@db:5432/votebot  # URL to db container.
 
 SIGNING_SECRET=[Signing Secret from Slack API -> Basic Information -> App Credentials section]
 SLACK_BOT_TOKEN=[xoxb Bot User OAuth Token from Slack API -> Install App section]
@@ -85,7 +88,7 @@ SLACK_BOT_TOKEN=[xoxb Bot User OAuth Token from Slack API -> Install App section
 ENABLE_SCHEDULER=0    # Enable for production.
 ```
 - If it's the first run, or you removed `database` volume you have to migrate DB and create superuser first:
-```
+```shell
 docker-compose run --entrypoint python vote-bot manage.py migrate
 docker-compose run --entrypoint python vote-bot manage.py createsuperuser
 ```
