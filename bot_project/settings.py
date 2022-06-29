@@ -19,7 +19,8 @@ ENABLE_SCHEDULER = os.environ.get("ENABLE_SCHEDULER") == '1' or False
 DEBUG = os.environ.get("DEBUG") == "1" or False
 
 VERSION = '1.0.0'
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*']   # TODO not suitable for production
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8080', 'http://127.0.0.1:8080']  # TODO add testing and prod hosts
 
 INSTALLED_APPS = [
     'grappelli',
@@ -97,6 +98,7 @@ USE_I18N = True
 
 USE_TZ = True
 
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

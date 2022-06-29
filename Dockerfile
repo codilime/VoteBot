@@ -24,4 +24,4 @@ COPY bot_project ./bot_project
 COPY manage.py ./
 
 USER lime
-ENTRYPOINT gunicorn bot_project.wsgi:application -b 0.0.0.0:8000
+ENTRYPOINT gunicorn bot_project.wsgi:application -b 0.0.0.0:8000 --timeout 5

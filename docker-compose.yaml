@@ -17,11 +17,20 @@ services:
       - SIGNING_SECRET
       - SLACK_BOT_TOKEN
       - ENABLE_SCHEDULER
-      - DEBUG
     ports:
       - "8000:8000"
     depends_on:
       - db
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    volumes:
+      - ./static:/var/www/static
+    ports:
+      - "8080:80"
+    depends_on:
+      - vote-bot
 
 volumes:
   database:
