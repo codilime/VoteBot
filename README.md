@@ -7,9 +7,15 @@ accordingly to CodiLime Manifesto:
 - Disrupt to grow
 
 ## TODO:
-- Greeting in every message is irritating...Rework texts in messages.
-- CI/CD
-- Deploy to test environment
+- CI/CD in Jenkins.
+- Deploy to test environment.
+- After successful InfoSec audit - expose endpoints for Slack API, so bot can work on our [test workspace](https://join.slack.com/t/programwyrniebot/shared_invite/zt-1ac7mt2iu-1VCqoLW6sHnave~Jur8AeQ).
+- Rework text in messages, bot has to be somewhat pleasant to interact with.
+- Add new endpoint - top 5 people from each category, so we'll know not only about winners, but also about anyone that stands out.
+- Add new field on voting modal - comment, so we'll know why someone voted that way and for this person.
+- Add new endpoint - comments that were given to a specific person in the current month.
+- Consider - are we sure we want to work with the winners in a month scope? Maybe we should include data range as argument to commands, but keep current month as a default?
+- If gathering data about winners through Slack commands feels clunky - in `/admin/` add custom views and graphs with this data.
 
 ## Dependencies
 This repository uses [poetry](https://github.com/python-poetry/poetry) to manage dependencies.
