@@ -2,8 +2,9 @@ import json
 import urllib.parse
 
 from django.test import override_settings
+from parameterized import parameterized
 
-from bot_app.models import Vote
+from bot_app.models import Vote, SlackUser
 from tests.base import BaseTestCase, get_signature_headers
 
 
@@ -66,7 +67,9 @@ class TestInteractiveEndpoint(BaseTestCase):
         self._mock_slack_client()
         self._add_simple_test_data(add_voting=False)
 
-    def test_vote(self) -> None:
+        self.bot_user = SlackUser.objects.create(slack_id="bot_user_id", name="bot.user", is_bot=True)
+
+    def test_simple_vote(self) -> None:
         # Save new vote.
         points_team_up_to_win = 0
         points_act_to_deliver = 1
@@ -131,3 +134,33 @@ class TestInteractiveEndpoint(BaseTestCase):
         assert vote.points_act_to_deliver == points_act_to_deliver
         assert vote.points_disrupt_to_grow == points_disrupt_to_grow
         assert vote.created != vote.modified
+
+    @parameterized.expand((
+            ((3, 3, 3), 'slack_user1_id', 'slack_user2_id', 'exactly 3 points'),
+            ((1, 0, 0), 'slack_user1_id', 'slack_user2_id', 'exactly 3 points'),
+            ((0, 1, 2), 'slack_user1_id', 'slack_user1_id', 'cannot vote for yourself'),
+            ((0, 1, 2), 'slack_user1_id', 'bot_user_id', 'cannot vote for bots'),
+    ))
+    def test_invalid_vote(self, points: list[int], voter: str, voted: str, error_message) -> None:
+        vote_modal = get_sent_vote_modal(
+            voting_user=voter,
+            voted_user=voted,
+            points_team_up_to_win=points[0],
+            points_act_to_deliver=points[1],
+            points_disrupt_to_grow=points[2],
+        )
+
+        data = {"payload": json.dumps(vote_modal)}
+        data = urllib.parse.urlencode(data)
+        response = self.client.post(
+            self.url,
+            data=data,
+            content_type='application/x-www-form-urlencoded',
+            **get_signature_headers(data=data)
+        )
+        assert response.status_code == 200
+        assert len(Vote.objects.all()) == 0
+
+        data = response.json()
+        assert data['response_action'] == 'errors'
+        assert error_message in str(data['errors'])

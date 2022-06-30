@@ -67,7 +67,7 @@ def interactive(request):
         errors["select_user"] = "You cannot vote for yourself!"
     if voted_user.is_bot:
         errors["select_user"] = "You cannot vote for bots!"
-    if not 0 < total_points <= 3:
+    if total_points != 3:
         errors[list(values.keys())[-1]] = "You must give out exactly 3 points in total!"
     if errors:
         response = {
