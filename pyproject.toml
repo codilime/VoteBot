@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "votebot"
+version = "1.0.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+Django = "^4.0.5"
+dj-database-url = "^0.5.0"
+python-dotenv = "^0.20.0"
+django-grappelli = "^3.0.3"
+django-extensions = "^3.1.5"
+slack-sdk = "^3.17.2"
+psycopg2-binary = "^2.9.3"
+pyee = "^9.0.4"
+pytz = "^2022.1"
+schedule = "^1.1.0"
+gunicorn = "^20.1.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.1.2"
+pytest-cov = "^3.0.0"
+parameterized = "^0.8.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

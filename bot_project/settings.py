@@ -1,7 +1,8 @@
 import os
-import dotenv
 from pathlib import Path
-import slack_sdk
+
+import dj_database_url
+import dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_file = os.path.join(BASE_DIR, ".env")
@@ -9,17 +10,17 @@ if os.path.isfile(dotenv_file):
     dotenv.load_dotenv(dotenv_file)
 
 SECRET_KEY = os.environ.get("SECRET_KEY", default="KEY")
-
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://")
 
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SIGNING_SECRET = os.environ.get("SIGNING_SECRET")
-SLACK_VERIFICATION_TOKEN = os.environ.get("SLACK_VERIFICATION_TOKEN")
 
-CLIENT = slack_sdk.WebClient(token=SLACK_BOT_TOKEN)
+ENABLE_SCHEDULER = os.environ.get("ENABLE_SCHEDULER") == '1' or False
+DEBUG = os.environ.get("DEBUG") == "1" or False
 
-ALLOWED_HOSTS = ['*']
-
-DEBUG = True
+VERSION = '1.0.0'
+ALLOWED_HOSTS = ['*']   # TODO not suitable for production
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8080', 'http://127.0.0.1:8080']  # TODO add testing and prod hosts
 
 INSTALLED_APPS = [
     'grappelli',
@@ -66,15 +67,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'bot_project.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -100,9 +98,8 @@ USE_I18N = True
 
 USE_TZ = True
 
-
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATIC_URL = 'static/'
-
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
