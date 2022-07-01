@@ -34,7 +34,7 @@ poetry export --without-hashes --format=requirements.txt > requirements/dev.txt 
 
 ## Running tests
 ```shell
- docker-compose -f docker-compose.tests.yaml up test-vote-bot --build
+ docker-compose -f docker-compose.tests.yaml up test-app --build
 ```
 Alternatively you can run tests with Python. You'll need virtual env set, and requirements installed, and with that
 everything should just run. Without the `.env` file, Slack API configuration, or rest of this readme:
@@ -95,8 +95,8 @@ ENABLE_SCHEDULER=0    # Enable for production.
 ```
 - If it's the first run, or you removed `database` volume you have to migrate DB and create superuser first:
 ```shell
-docker-compose run --entrypoint python vote-bot manage.py migrate
-docker-compose run --entrypoint python vote-bot manage.py createsuperuser
+docker-compose run --entrypoint python app manage.py migrate
+docker-compose run --entrypoint python app manage.py createsuperuser
 ```
 - After that use `docker-compose up` command to run the containers
 - App should start, but for full functionality you'll have to [set up endpoints in Slack API](#endpoints).

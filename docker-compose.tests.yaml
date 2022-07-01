@@ -1,24 +1,26 @@
 version: "3.9"
 
 services:
-  db:
+  test-db:
+    container_name: test-votebot-database
     image: postgres:14.4-bullseye
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=votebot
+      - POSTGRES_DB=test-votebot
     healthcheck:
       test: ["CMD-SHELL", "pg_isready", "-u", "postgres"]
       interval: 5s
       timeout: 30s
       retries: 5
       start_period: 10s
-  test-vote-bot:
+  test-app:
+    container_name: test-votebot-app
     build:
       target: tests
     environment:
       - SECRET_KEY=very_secret_testing_key
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/votebot
+      - DATABASE_URL=postgres://postgres:postgres@test-db:5432/test-votebot
     depends_on:
-      db:
+      test-db:
         condition: service_healthy
