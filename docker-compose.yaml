@@ -21,8 +21,6 @@ services:
       - SIGNING_SECRET
       - SLACK_BOT_TOKEN
       - ENABLE_SCHEDULER
-    ports:
-      - "8000:8000"
     depends_on:
       - db
   nginx:
@@ -34,7 +32,7 @@ services:
     volumes:
       - ./static:/var/www/static
     ports:
-      - "8080:80"
+      - "8000:80"
     depends_on:
       - app
 

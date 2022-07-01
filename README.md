@@ -80,7 +80,8 @@ python manage.py createsuperuser
 
 python manage.py runserver
 ```
-- App should start, but for full functionality you'll have to [set up endpoints in Slack API](#endpoints).
+- App should be available at [http://127.0.0.1:8000/](http://127.0.0.1:8000/) 
+- For full functionality you'll have to [set up endpoints in Slack API](#endpoints).
 
 ### Docker run
 - In project's root create `.env` file:
@@ -99,7 +100,8 @@ docker-compose run --entrypoint python app manage.py migrate
 docker-compose run --entrypoint python app manage.py createsuperuser
 ```
 - After that use `docker-compose up` command to run the containers
-- App should start, but for full functionality you'll have to [set up endpoints in Slack API](#endpoints).
+- App should be available at [http://127.0.0.1:8000/](http://127.0.0.1:8000/) 
+- For full functionality you'll have to [set up endpoints in Slack API](#endpoints).
 
 **Static files**   
 With Docker app is served through Nginx, like it would on production server. Because of that static files are also
