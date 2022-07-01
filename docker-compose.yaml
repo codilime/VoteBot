@@ -10,6 +10,8 @@ services:
       - POSTGRES_DB=votebot
     volumes:
       - votebot-database:/var/lib/postgresql/data
+    networks:
+      - votebot-network
   app:
     container_name: votebot-app
     image: votebot-app:${COMMIT_ID:-dev}
@@ -23,6 +25,8 @@ services:
       - ENABLE_SCHEDULER
     depends_on:
       - db
+    networks:
+      - votebot-network
   nginx:
     container_name: votebot-nginx
     image: votebot-nginx:${COMMIT_ID:-dev}
@@ -35,6 +39,10 @@ services:
       - "8000:80"
     depends_on:
       - app
+    networks:
+      - votebot-network
 
 volumes:
   votebot-database:
+networks:
+  votebot-network:

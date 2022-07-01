@@ -14,6 +14,8 @@ services:
       timeout: 30s
       retries: 5
       start_period: 10s
+    networks:
+      - votebot-tests-network
   test-app:
     container_name: test-votebot-app
     build:
@@ -24,3 +26,8 @@ services:
     depends_on:
       test-db:
         condition: service_healthy
+    networks:
+      - votebot-tests-network
+
+networks:
+  votebot-tests-network:
