@@ -1,7 +1,6 @@
 from django.contrib import admin
-from .models import SlackProfile, SlackUser, VotingResults
 
+from bot_app.models import SlackUser, Vote
 
-admin.site.register(SlackProfile)
 admin.site.register(SlackUser)
-admin.site.register(VotingResults)
+admin.site.register(Vote)
