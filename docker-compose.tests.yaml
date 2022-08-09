@@ -16,18 +16,9 @@ services:
       start_period: 10s
     networks:
       - votebot-tests-network
-  test-app:
-    container_name: test-votebot-app
-    build:
+   build:
+      context: .
       target: tests
-    environment:
-      - SECRET_KEY=very_secret_testing_key
-      - DATABASE_URL=postgres://postgres:postgres@test-db:5432/test-votebot
-    depends_on:
-      test-db:
-        condition: service_healthy
-    networks:
-      - votebot-tests-network
 
 networks:
   votebot-tests-network:

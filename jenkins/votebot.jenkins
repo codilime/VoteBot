@@ -1,0 +1,40 @@
+pipeline {
+    agent {label 'votebot'}
+    stages {
+        stage('Clone code') {
+            steps {
+                checkout([
+                    $class: 'GitSCM', branches: [[name: 'dev']],
+                    userRemoteConfigs: [[url: 'https://github.com/codilime/VoteBot']]
+                ])
+            }
+        }
+        stage('Run tests') {
+            steps {
+                sh """
+                docker compose -f docker-compose.tests.yaml up test-app --build
+                docker compose -f docker-compose.tests.yaml down
+                """
+            }
+        }
+        stage('Build and tag images') {
+            steps {
+
+                sh """
+                export COMMIT_ID=\$(git log -1 --pretty=format:%h)
+                docker compose build
+                docker tag votebot-app:\$COMMIT_ID votebot-app:latest
+                docker tag votebot-nginx:\$COMMIT_ID votebot-nginx:latest
+                """
+            }
+        }
+        stage('Run app') {
+            steps {
+                sh """
+                docker compose stop
+                docker compose up -d
+                """
+            }
+        }
+    }
+}
