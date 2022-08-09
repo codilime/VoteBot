@@ -16,7 +16,7 @@ services:
       start_period: 10s
     networks:
       - votebot-tests-network
-   build:
+    build:
       context: .
       target: tests
 
