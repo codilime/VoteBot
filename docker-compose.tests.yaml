@@ -27,7 +27,7 @@ services:
         test-db:
           condition: service_healthy
       networks:
-      - votebot-tests-network
+        - votebot-tests-network
 
 networks:
   votebot-tests-network:
