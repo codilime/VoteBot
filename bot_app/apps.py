@@ -14,7 +14,7 @@ class BotAppConfig(AppConfig):
     def ready(self) -> None:
         self.slack_client = SlackClient(token=settings.SLACK_BOT_TOKEN)
 
-        if 'runserver' not in str(sys.argv) or 'gunicorn' not in str(sys.argv):
+        if 'runserver' not in str(sys.argv) and 'gunicorn' not in str(sys.argv):
             # Skip users sync and scheduler if server is not starting.
             return
 
