@@ -129,6 +129,51 @@ def get_winners_message(start: datetime, end: datetime) -> str:
     return texts.announce_winners(values=winners_data)
 
 
+def get_top5_message(start: datetime, end: datetime) -> str:
+    """Find the top 5 performers in each category for current month or all time.
+    Enter input params ts_start and ts_end for searching in time range.
+    You can use 'get_start_end_month' method to create ts_start and ts_end parameters for searching in current month.
+    @param start: datetime
+    @param end: datetime
+    @rtype: str
+    @return: message contain information about the top 5 performers in each category
+    """
+    users_points = total_points(start=start, end=end)
+
+    # Find top5 and their points for each category.
+    each_categories_top5 = {}
+    for category in CATEGORIES.keys():
+        ordered_users = []
+        for user, values in users_points.items():
+            userpoints = values[category]
+            if len(ordered_users) == 0:
+                ordered_users.append([user, userpoints])
+                continue
+            for i in range(0, len(ordered_users)):
+                if userpoints >= ordered_users[i][1]:
+                    ordered_users.insert(i, [user, userpoints])
+                    break
+
+        each_categories_top5[category] = ordered_users[0:5]
+
+    # Translate slack user ID's into slack usernames
+
+    for category, top5 in each_categories_top5:
+        for index, user_w_points in enumerate(top5):
+            username = SlackUser.objects.get(slack_id=user_w_points[0]).name
+            each_categories_top5[category][index][0] = username
+
+    # Generate top5 message. TODO: Rewrite this segment to use the texts library
+    top5_data = {
+        CATEGORIES[category]: '\n'.join([f"-{user} z {points} punktami" for user, points in top5])
+        for category, top5 in each_categories_top5.items()
+    }
+    message = "\n".join([f"Top 5 limonek w kategorii {category} w tym miesiącu:\n{top5}"
+              for category, top5 in top5_data])
+
+    return message
+
+
 def get_start_end_month():
     """Calculate timestamp for start and end current month.
     @return:

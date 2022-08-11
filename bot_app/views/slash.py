@@ -9,7 +9,7 @@ from bot_app.modals.vote import build_voting_modal
 from bot_app.models import SlackUser, CATEGORIES
 from bot_app.texts import texts
 from bot_app.utils import calculate_points, get_start_end_month, get_winners_message, get_slack_client, get_your_votes, \
-    send_about_message, logger
+    send_about_message, get_top5_message, logger
 
 
 @csrf_exempt
@@ -112,6 +112,35 @@ def check_winners(request):
 
     client = get_slack_client()
     client.post_chat_message(message, text="Check this month's winners!")
+    return HttpResponse()
+
+@csrf_exempt
+@require_http_methods('POST')
+@verify_request
+def check_top5(request):
+    """ Handles /check-top5 slash command. Check top 5 nominees of each category in the current month. """
+    form = UserForm(request.POST)
+    if not form.is_valid():
+        errors = form.errors.as_json()
+        logger.warning(errors)
+        return HttpResponseBadRequest(errors)
+
+    try:
+        user = SlackUser.objects.get(slack_id=form.cleaned_data['user_id'])
+    except SlackUser.DoesNotExist:
+        return HttpResponseBadRequest('User does not exist.')
+
+    if not user.is_hr:
+        content = texts.no_permissions()
+    else:
+        start, end = get_start_end_month()
+        content = get_top5_message(start=start, end=end)
+
+    greeting = texts.greeting(name=user.real_name)
+    message = build_text_message(channel=user.slack_id, content=[greeting, content])
+
+    client = get_slack_client()
+    client.post_chat_message(message, text="Check this month's top 5's!")
     return HttpResponse()
 
 
