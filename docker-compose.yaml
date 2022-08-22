@@ -18,11 +18,11 @@ services:
     build:
       target: production
     environment:
-      - SECRET_KEY
-      - DATABASE_URL
-      - SIGNING_SECRET
-      - SLACK_BOT_TOKEN
-      - ENABLE_SCHEDULER
+      - SECRET_KEY=ABDSREARS839281630192
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/votebot
+      - SIGNING_SECRET=0e78f66914db328b9ac4c2c2ea70b170
+      - SLACK_BOT_TOKEN=xoxb-3421058008353-3933334983280-EKIbwAC5rX3aOoWAUpK7Ollb
+      - ENABLE_SCHEDULER=1
     depends_on:
       - db
     networks:
