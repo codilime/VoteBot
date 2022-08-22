@@ -2,13 +2,14 @@ pipeline {
     agent {label 'votebot'}
     stages {
         stage('Clone code'){           
-            
+            steps{
             checkout([
                     $class: 'GitSCM', branches: [[name: 'dev']],
                     userRemoteConfigs: [[url: 'https://github.com/codilime/VoteBot']]
                 ])
             
             }
+        }
         stage('Run tests') {
             steps {
 
