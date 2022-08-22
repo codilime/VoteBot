@@ -1,52 +1,46 @@
 pipeline {
     agent {label 'votebot'}
 
-    environment {
-        GIT_REPO_ID = credentials('4a404eca-0922-4b40-9ee7-42fbe3147df8')
-        BRANCH_NAME = "${GIT_BRANCH.replaceFirst(/^.*\//, '')}"
-    }
 
     stages {
         stage('Clone code') {
-            steps {
-                withCredentials([gitUsernamePassword(credentialsId: "$GIT_REPO_ID")]) {
-                    checkout([
-                        $class: 'GitSCM', branches: [[name: 'dev']],
-                        userRemoteConfigs: [[url: 'https://github.com/codilime/VoteBot']]
-                    ])
-                }
+           
+            
+            checkout([
+                    $class: 'GitSCM', branches: [[name: 'dev']],
+                    userRemoteConfigs: [[url: 'https://github.com/codilime/VoteBot']]
+                ])
+            
             }
         }
         stage('Run tests') {
             steps {
-                withCredentials([gitUsernamePassword(credentialsId: "$GIT_REPO_ID")]) {
-                    sh """
-                    docker compose -f docker-compose.tests.yaml up test-app --build
-                    docker compose -f docker-compose.tests.yaml down
-                    """
-                }
+
+                sh """
+                docker compose -f docker-compose.tests.yaml up test-app --build
+                docker compose -f docker-compose.tests.yaml down
+                """
+                
             }
         }
         stage('Build and tag images') {
             steps {
-                withCredentials([gitUsernamePassword(credentialsId: "$GIT_REPO_ID")]) {
-                    sh """
-                    export COMMIT_ID=\$(git log -1 --pretty=format:%h)
-                    docker compose build
-                    docker tag votebot-app:\$COMMIT_ID votebot-app:latest
-                    docker tag votebot-nginx:\$COMMIT_ID votebot-nginx:latest
-                    """
-                }
+                sh """
+                export COMMIT_ID=\$(git log -1 --pretty=format:%h)
+                docker compose build
+                docker tag votebot-app:\$COMMIT_ID votebot-app:latest
+                docker tag votebot-nginx:\$COMMIT_ID votebot-nginx:latest
+                """
+    
             }
         }
         stage('Run app') {
             steps {
-                withCredentials([gitUsernamePassword(credentialsId: "$GIT_REPO_ID")]) {
-                    sh """
-                    docker compose stop
-                    docker compose up -d
-                    """
-                }
+                sh """
+                docker compose stop
+                docker compose up -d
+                """
+
             }
         }
     }
