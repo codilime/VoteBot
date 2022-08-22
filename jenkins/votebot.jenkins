@@ -1,10 +1,7 @@
 pipeline {
     agent {label 'votebot'}
-
-
     stages {
-        stage('Clone code') {
-           
+        stage('Clone code'){           
             
             checkout([
                     $class: 'GitSCM', branches: [[name: 'dev']],
@@ -12,7 +9,6 @@ pipeline {
                 ])
             
             }
-        }
         stage('Run tests') {
             steps {
 
