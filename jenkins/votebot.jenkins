@@ -1,7 +1,7 @@
 pipeline {
     agent {label 'votebot'}
     environment {
-        GIT_REPO_ID = credentials('cf04736d-fafc-489a-85e3-3116619ae104')
+        GIT_REPO_ID = credentials('eb291730-262f-46e8-b644-743f73252170')
     }
 
     stages {
