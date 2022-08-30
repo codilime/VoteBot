@@ -38,8 +38,8 @@ def calculate_points(voted_user, start: datetime, end: datetime) -> dict:
     @rtype: dict
     @return: dict with categories as keys and sum of point as value.
     """
-    logger.info('=' * 30)
-    logger.info(f'calculate_points')
+    # logger.info('=' * 30)
+    # logger.info(f'calculate_points')
     points = {
         "points_team_up_to_win": Vote.objects.filter(
             voted_user=get_user(voted_user), created__range=(start, end)
@@ -51,13 +51,13 @@ def calculate_points(voted_user, start: datetime, end: datetime) -> dict:
             voted_user=get_user(voted_user), created__range=(start, end)
         ).aggregate(Sum("points_disrupt_to_grow"))["points_disrupt_to_grow__sum"],
     }
-    logger.info('Query was successful.')
+    # logger.info('Query was successful.')
 
     for k, v in points.items():
         if v is None:
             points[k] = 0
-    logger.info('Points was calculated')
-    logger.info('=' * 30)
+    # logger.info('Points was calculated')
+    # logger.info('=' * 30)
     return points
 
 
@@ -70,15 +70,15 @@ def total_points(start: datetime, end: datetime) -> dict:
     @rtype: dict
     @return : dict contain sum of point for all slack users.
     """
-    logger.info('=' * 30)
-    logger.info(f'total_points')
-    users = SlackUser.objects.all()
+    # logger.info('=' * 30)
+    # logger.info(f'total_points')
+    users = SlackUser.objects.filter(is_bot=False)
     points = {
         user.slack_id: calculate_points(voted_user=user.slack_id, start=start, end=end)
         for user in users
     }
-    logger.info('Points was calculated')
-    logger.info('=' * 30)
+    # logger.info('Points was calculated')
+    # logger.info('=' * 30)
     return points
 
 
@@ -124,13 +124,14 @@ def get_winners_message(start: datetime, end: datetime) -> str:
     winners_data = []
     for attr, category in CATEGORIES.items():
         points = categories_points[attr]
-        users = [user.name for user in SlackUser.objects.filter(slack_id__in=categories_winners[attr], is_bot=False)]
+        users = [user.real_name
+                 for user in SlackUser.objects.filter(slack_id__in=categories_winners[attr], is_bot=False)]
         winners_data.append(dict(category=category, points=points, user=users))
     return texts.announce_winners(values=winners_data)
 
 
 def get_top5_message(start: datetime, end: datetime) -> str:
-    """Find the top 5 performers in each category for current month or all time.
+    """Find the top 5 performers in each category for current month or any time period.
     Enter input params ts_start and ts_end for searching in time range.
     You can use 'get_start_end_month' method to create ts_start and ts_end parameters for searching in current month.
     @param start: datetime
@@ -139,37 +140,43 @@ def get_top5_message(start: datetime, end: datetime) -> str:
     @return: message contain information about the top 5 performers in each category
     """
     users_points = total_points(start=start, end=end)
+    # logger.warning(f"<DEBUG> user_points:\n{users_points}")
+
 
     # Find top5 and their points for each category.
     each_categories_top5 = {}
     for category in CATEGORIES.keys():
         ordered_users = []
         for user, values in users_points.items():
-            userpoints = values[category]
+            category_points = values[category]
             if len(ordered_users) == 0:
-                ordered_users.append([user, userpoints])
+                ordered_users.append([user, category_points])
                 continue
             for i in range(0, len(ordered_users)):
-                if userpoints >= ordered_users[i][1]:
-                    ordered_users.insert(i, [user, userpoints])
+                if category_points >= ordered_users[i][1]:
+                    ordered_users.insert(i, [user, category_points])
                     break
+                elif len(ordered_users) < 5:
+                    ordered_users.append([user, category_points])
 
         each_categories_top5[category] = ordered_users[0:5]
 
     # Translate slack user ID's into slack usernames
-
-    for category, top5 in each_categories_top5:
+    # logger.warning(f"<DEBUG> each_categories_top5:\n{each_categories_top5}")
+    for category, top5 in each_categories_top5.items():
         for index, user_w_points in enumerate(top5):
-            username = SlackUser.objects.get(slack_id=user_w_points[0]).name
-            each_categories_top5[category][index][0] = username
+            user_real_name = SlackUser.objects.get(slack_id=user_w_points[0]).name
+            each_categories_top5[category][index][0] = user_real_name
 
     # Generate top5 message. TODO: Rewrite this segment to use the texts library
+
     top5_data = {
-        CATEGORIES[category]: '\n'.join([f"-{user} z {points} punktami" for user, points in top5])
+        CATEGORIES[category]: '\n'.join([f" • {SlackUser.objects.get(name=user).real_name} z {points} punktami\n" for user, points in top5])
         for category, top5 in each_categories_top5.items()
     }
-    message = "\n".join([f"Top 5 limonek w kategorii {category} w tym miesiącu:\n{top5}"
-              for category, top5 in top5_data])
+    # TODO: use the texts module
+    message = "\n".join([f"\n\nTop 5 limonek w kategorii {category} w tym półroczu:\n{top5}"
+                         for category, top5 in top5_data.items()])
 
     return message
 
@@ -195,6 +202,28 @@ def get_start_end_month():
     return start, end
 
 
+def get_start_end_half_year():
+    """Calculate timestamp for start and end current month.
+    @return:
+        start : datetime of beginning current month.
+        end : datetime of end current month.
+    """
+    today = datetime.now()
+    start = today.replace(
+        day=1, month=1 if today.month <= 6 else 7, hour=0, minute=0, second=0, microsecond=0, tzinfo=pytz.UTC
+    )
+    end = today.replace(
+        month=6 if today.month <= 6 else 12,
+        day=calendar.monthrange(start.year, 6 if today.month <= 6 else 12)[1],
+        hour=23,
+        minute=59,
+        second=59,
+        microsecond=9999,
+        tzinfo=pytz.UTC,
+    )
+    return start, end
+
+
 def save_vote(vote: dict, user_id: str) -> None:
     current_month = get_start_end_month()
     res = Vote.objects.filter(
@@ -210,6 +239,7 @@ def save_vote(vote: dict, user_id: str) -> None:
             points_team_up_to_win=vote["points_team_up_to_win"],
             points_act_to_deliver=vote["points_act_to_deliver"],
             points_disrupt_to_grow=vote["points_disrupt_to_grow"],
+            comment=vote["comment"]
         )
     else:
         res = res.first()
@@ -217,21 +247,31 @@ def save_vote(vote: dict, user_id: str) -> None:
         res.points_act_to_deliver = vote["points_act_to_deliver"]
         res.points_disrupt_to_grow = vote["points_disrupt_to_grow"]
         res.modified = datetime.now()
+        res.comment = res.comment + f"\n\n{'=' * 30}\n\n" + vote["comment"]
         res.save(
             update_fields=[
                 "points_team_up_to_win",
                 "points_act_to_deliver",
                 "points_disrupt_to_grow",
+                "comment",
                 "modified"
             ]
         )
 
+        client = get_slack_client()
+        content = f"Właśnie zaktualizowałeś swój głos na {res.voted_user.real_name}"
+        message = build_text_message(channel=user_id, content=[content])
+        client.post_chat_message(message, text="Vote update")
 
-def get_your_votes(user: SlackUser) -> str:
-    current_month = get_start_end_month()
+
+def get_your_votes(user: SlackUser, start: datetime = None, end: datetime = None) -> str:
+    if not start and not end:
+        daterange = get_start_end_half_year()
+    else:
+        daterange = (start, end)
     votes = list(Vote.objects.filter(
         voting_user=user,
-        created__range=current_month,
+        created__range=daterange,
     ))
 
     if not votes:
@@ -242,5 +282,6 @@ def get_your_votes(user: SlackUser) -> str:
         points = []
         for field, category in CATEGORIES.items():
             points.append({'category': category, 'points': getattr(vote, field)})
-        users_votes.append(texts.your_vote(values={'user': vote.voted_user.name, 'points': points}))
+        user_real_name = SlackUser.objects.get(name=vote.voted_user.name).real_name
+        users_votes.append(texts.your_vote(values={'user': user_real_name, 'points': points}))
     return '\n\n'.join(users_votes)

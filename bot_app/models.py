@@ -28,6 +28,7 @@ class Vote(models.Model):
     points_disrupt_to_grow = models.IntegerField(default=0)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
+    comment = models.TextField(null=True, max_length=512)
 
     def __str__(self):
         return f"Class: {self.__class__.__name__}, user: {self.voting_user}."

@@ -77,7 +77,7 @@ class TextsBuilder:
             else:
                 result.append(line.format(**line_values))
 
-        lines = '\n'.join(result)
+        lines = '\n\n'.join(result)
         return f'{header}\n{lines}'
 
     def you_have_not_voted(self) -> str:
