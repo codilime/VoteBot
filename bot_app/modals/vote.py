@@ -1,3 +1,6 @@
+import logging
+import json
+
 from bot_app.models import CATEGORIES
 
 
@@ -72,9 +75,35 @@ _points_fields = [
 
 ]
 
+_comment = {
+    "type": "input",
+
+    "block_id": "comment",
+    "element": {
+        "type": "plain_text_input",
+        "min_length": 30,
+        "action_id": "comment-action"
+    },
+    "label": {
+        "type": "plain_text",
+        "text": "Comment",
+        "emoji": True
+    }
+}
+_comment_context = {
+    "type": "context",
+    "elements": [
+        {
+            "type": "plain_text",
+            "text": "Describe why You're casting the vote the way You are",
+            "emoji": True
+        }
+    ]
+}
+
 
 def build_voting_modal() -> dict:
-    return {
+    result = {
         "type": "modal",
         "title": {"type": "plain_text", "text": "Voting", "emoji": True},
         "submit": {"type": "plain_text", "text": "Submit", "emoji": True},
@@ -85,6 +114,11 @@ def build_voting_modal() -> dict:
             _divider,
             _points_context,
             *_points_fields,
-
+            _comment,
+            _comment_context
         ],
     }
+
+    logging.warning(json.dumps(result, indent=4))
+    return result
+

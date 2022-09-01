@@ -6,6 +6,7 @@ from bot_app.texts import texts
 from bot_app.utils import (
     get_slack_client,
     get_start_end_month,
+    get_start_end_half_year,
     get_winners_message,
 )
 
@@ -31,7 +32,7 @@ def remind_about_program() -> None:
 
 
 def announce_winners() -> None:
-    start, end = get_start_end_month()
+    start, end = get_start_end_half_year()
     text = get_winners_message(start=start, end=end)
     users = list(SlackUser.objects.filter(is_hr=True))
 
