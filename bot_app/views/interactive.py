@@ -26,11 +26,12 @@ def interactive(request):
         data = json.loads(request.POST.get('payload', ''))
     except json.JSONDecodeError as e:
         return HttpResponseBadRequest(e)
-    logger.warning(f"<DEBUG>data:\n{json.dumps(data, indent=4)}")
+    # logger.warning(f"<DEBUG>data:\n{json.dumps(data, indent=4)}")
     if data.get('type') != 'view_submission':
         return HttpResponseBadRequest('Not a view submission.')
 
-    # TODO: fix this abomination ( looking for slack block in payload ). perhaps you can set ID of an entire form ?
+    # if check_comments_header is in the request, then it's a response from the get comments user selection modal, not
+    # the vote modal
     if check_comments_header in data['view']['blocks']:
         selected_user_slack_id = data['view']['state']['values']['select_user']['select_user-action']['selected_user']
         selected_user = SlackUser.objects.get(slack_id=selected_user_slack_id)
@@ -46,7 +47,6 @@ def interactive(request):
         client = get_slack_client()
         client.post_chat_message(message, text="Information about awards program.")
     else:
-
         # Get vote data.
         total_points = 0
         try:

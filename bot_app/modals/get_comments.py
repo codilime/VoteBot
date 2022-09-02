@@ -8,6 +8,7 @@ check_comments_header = {
                 }
             }
 
+
 def build_comments_modal() -> dict:
     modal = x = {
         "title": {

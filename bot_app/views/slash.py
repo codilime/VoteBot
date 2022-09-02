@@ -11,7 +11,7 @@ from bot_app.modals.vote import build_voting_modal
 from bot_app.modals.get_comments import build_comments_modal
 from bot_app.models import SlackUser, CATEGORIES
 from bot_app.texts import texts
-from bot_app.utils import calculate_points, get_start_end_month, get_start_end_half_year, get_winners_message, get_slack_client, get_your_votes, \
+from bot_app.utils import calculate_points, get_start_end_month, get_start_end_half_year, get_winners_message, get_slack_client, get_your_votes_message, \
     send_about_message, get_top5_message, logger
 
 
@@ -43,7 +43,7 @@ def check_comments(request):
         logger.warning(errors)
         return HttpResponseBadRequest(errors)
 
-    # TriggerForm does not have a 'user_id' key, therefore it must be extracted from the request itself
+    # TriggerForm does not have a 'user_id' key, hence it must be extracted from the request itself via magic sorcery
     user_id = json.loads("{\"" + request.body.decode('utf-8')
                          .replace("=", "\": \"").replace("&", "\", \"") + "\"}")['user_id']
 
@@ -82,7 +82,7 @@ def check_votes(request):
         return HttpResponseBadRequest('User does not exist.')
 
     greeting = texts.greeting(name=user.real_name)
-    votes_text = get_your_votes(user=user)
+    votes_text = get_your_votes_message(user=user)
     message = build_text_message(channel=user.slack_id, content=[greeting, votes_text])
 
     client = get_slack_client()

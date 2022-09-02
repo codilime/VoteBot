@@ -38,8 +38,6 @@ def calculate_points(voted_user, start: datetime, end: datetime) -> dict:
     @rtype: dict
     @return: dict with categories as keys and sum of point as value.
     """
-    # logger.info('=' * 30)
-    # logger.info(f'calculate_points')
     points = {
         "points_team_up_to_win": Vote.objects.filter(
             voted_user=get_user(voted_user), created__range=(start, end)
@@ -51,13 +49,10 @@ def calculate_points(voted_user, start: datetime, end: datetime) -> dict:
             voted_user=get_user(voted_user), created__range=(start, end)
         ).aggregate(Sum("points_disrupt_to_grow"))["points_disrupt_to_grow__sum"],
     }
-    # logger.info('Query was successful.')
 
     for k, v in points.items():
         if v is None:
             points[k] = 0
-    # logger.info('Points was calculated')
-    # logger.info('=' * 30)
     return points
 
 
@@ -70,15 +65,11 @@ def total_points(start: datetime, end: datetime) -> dict:
     @rtype: dict
     @return : dict contain sum of point for all slack users.
     """
-    # logger.info('=' * 30)
-    # logger.info(f'total_points')
     users = SlackUser.objects.filter(is_bot=False)
     points = {
         user.slack_id: calculate_points(voted_user=user.slack_id, start=start, end=end)
         for user in users
     }
-    # logger.info('Points was calculated')
-    # logger.info('=' * 30)
     return points
 
 
@@ -111,6 +102,7 @@ def get_winners_message(start: datetime, end: datetime) -> str:
 
         for user, values in users_points.items():
             user_points = values[category]
+
             if user_points > winners_points:
                 winners_points = user_points
                 winners = [user]
@@ -140,18 +132,21 @@ def get_top5_message(start: datetime, end: datetime) -> str:
     @return: message contain information about the top 5 performers in each category
     """
     users_points = total_points(start=start, end=end)
-    # logger.warning(f"<DEBUG> user_points:\n{users_points}")
-
 
     # Find top5 and their points for each category.
     each_categories_top5 = {}
     for category in CATEGORIES.keys():
+
         ordered_users = []
         for user, values in users_points.items():
             category_points = values[category]
+            # If there are no users in the list yet, append a user
             if len(ordered_users) == 0:
                 ordered_users.append([user, category_points])
                 continue
+            # Otherwise, if current user's category points exceed or equal that of any other user in a given user/points
+            # pair in the ordered_users list, insert current user ( w category points, in a list ) on that user/points
+            # pair's index in the list.
             for i in range(0, len(ordered_users)):
                 if category_points >= ordered_users[i][1]:
                     ordered_users.insert(i, [user, category_points])
@@ -159,24 +154,29 @@ def get_top5_message(start: datetime, end: datetime) -> str:
                 elif len(ordered_users) < 5:
                     ordered_users.append([user, category_points])
 
+        # Under the category name key assign user/points pairs of top5 users in the given category to the category
         each_categories_top5[category] = ordered_users[0:5]
 
-    # Translate slack user ID's into slack usernames
-    # logger.warning(f"<DEBUG> each_categories_top5:\n{each_categories_top5}")
+    # Translate slack user ID's into verbose slack usernames
     for category, top5 in each_categories_top5.items():
         for index, user_w_points in enumerate(top5):
             user_real_name = SlackUser.objects.get(slack_id=user_w_points[0]).name
             each_categories_top5[category][index][0] = user_real_name
 
-    # Generate top5 message. TODO: Rewrite this segment to use the texts library
-
-    top5_data = {
+    # Generate top5 message. TODO: use the texts module
+    top5_texts = {
         CATEGORIES[category]: '\n'.join([f" • {SlackUser.objects.get(name=user).real_name} z {points} punktami\n" for user, points in top5])
         for category, top5 in each_categories_top5.items()
     }
-    # TODO: use the texts module
+
     message = "\n".join([f"\n\nTop 5 limonek w kategorii {category} w tym półroczu:\n{top5}"
-                         for category, top5 in top5_data.items()])
+                         for category, top5 in top5_texts.items()])
+
+    # On second thought the texts module might simply overcomplicate things, e.g. see how in the two lines above a
+    # complex message is multiplied for each category. Separating this in two files might be unintuitive and confusing.
+    # There seems to be no good solution to simplify this for an end user and perhaps it's better to let the developers
+    # edit this directly according to HR's requests. The scarce amount of text in almost all responses hardly justifies
+    # using separate text files.
 
     return message
 
@@ -203,10 +203,10 @@ def get_start_end_month():
 
 
 def get_start_end_half_year():
-    """Calculate timestamp for start and end current month.
+    """Calculate timestamp for start and end of the current half-year.
     @return:
-        start : datetime of beginning current month.
-        end : datetime of end current month.
+        start : datetime of the beginning of the current half-year.
+        end : datetime of the end of the current half-year.
     """
     today = datetime.now()
     start = today.replace(
@@ -258,13 +258,14 @@ def save_vote(vote: dict, user_id: str) -> None:
             ]
         )
 
+        # Notify the user that he has updated his vote
         client = get_slack_client()
         content = f"Właśnie zaktualizowałeś swój głos na {res.voted_user.real_name}"
         message = build_text_message(channel=user_id, content=[content])
         client.post_chat_message(message, text="Vote update")
 
 
-def get_your_votes(user: SlackUser, start: datetime = None, end: datetime = None) -> str:
+def get_your_votes_message(user: SlackUser, start: datetime = None, end: datetime = None) -> str:
     if not start and not end:
         daterange = get_start_end_half_year()
     else:
