@@ -41,8 +41,8 @@ COPY requirements/dev.txt ./requirements.txt
 COPY tests ./tests
 
 RUN pip install -r requirements.txt --no-cache-dir
-#RUN ./manage.py makemigrations
-#RUN ./manage.py migrate
+RUN ./manage.py makemigrations
+RUN ./manage.py migrate
 
 USER lime
 ENTRYPOINT coverage run --source='./bot_app' manage.py test --verbosity=3 && coverage report -m
