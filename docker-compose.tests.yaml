@@ -1,6 +1,6 @@
 version: "3.9"
 services:
-  test-db:
+  db:
     container_name: test-votebot-database
     image: postgres:14.4-bullseye
     environment:
@@ -20,7 +20,7 @@ services:
     build:
       target: tests
     depends_on:
-      test-db:
+      db:
         condition: service_healthy
     networks:
       - votebot-tests-network
