@@ -41,6 +41,7 @@ COPY requirements/dev.txt ./requirements.txt
 COPY tests ./tests
 
 RUN pip install -r requirements.txt --no-cache-dir
+RUN chmod u+x manage.py
 RUN ./manage.py makemigrations
 RUN ./manage.py migrate
 
