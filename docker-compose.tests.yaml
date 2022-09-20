@@ -19,9 +19,6 @@ services:
     container_name: test-votebot-app
     build:
       target: tests
-    environment:
-      - SECRET_KEY=very_secret_testing_key
-      - DATABASE_URL=postgres://postgres:postgres@test-db:5432/test-votebot
     depends_on:
       test-db:
         condition: service_healthy
