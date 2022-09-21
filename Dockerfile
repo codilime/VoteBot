@@ -31,10 +31,10 @@ COPY manage.py ./
 
 FROM build AS production
 
-USER lime
 RUN chmod u+x manage.py
-RUN python makemigrations
-RUN python manage.py migrate
+RUN ./manage.py makemigrations
+RUN ./manage.py migrate
+USER lime
 ENTRYPOINT gunicorn bot_project.wsgi:application -b 0.0.0.0:8000 --timeout 5 --capture-output --log-level debug
 
 
