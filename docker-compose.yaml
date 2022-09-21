@@ -14,7 +14,7 @@ services:
       - votebot-network
   app:
     container_name: votebot-app
-    image: votebot-app:${COMMIT_ID:-latest}
+    image: votebot-app:${COMMIT_ID}
     build:
       target: production
     depends_on:
@@ -23,7 +23,7 @@ services:
       - votebot-network
   nginx:
     container_name: votebot-nginx
-    image: votebot-nginx:${COMMIT_ID:-latest}
+    image: votebot-nginx:${COMMIT_ID}
     build:
       context: .
       dockerfile: nginx/Dockerfile
