@@ -43,9 +43,8 @@ COPY requirements/dev.txt ./requirements.txt
 COPY tests ./tests
 
 RUN pip install -r requirements.txt --no-cache-dir
-RUN chmod u+x manage.py
-RUN ./manage.py makemigrations
-RUN ./manage.py migrate
-
+RUN chown lime:lime -R /votebot 
 USER lime
+CMD ["./manage.py makemigrations", "./manage.py migrate"]
+
 ENTRYPOINT coverage run --source='./bot_app' manage.py test --verbosity=3 && coverage report -m
