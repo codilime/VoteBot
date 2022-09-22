@@ -31,9 +31,9 @@ COPY manage.py ./
 
 FROM build AS production
 
-RUN chmod u+x manage.py
-CMD ["./manage.py makemigrations", "./manage.py migrate"]
+RUN chown lime:lime -R /votebot 
 USER lime
+CMD ["./manage.py makemigrations", "./manage.py migrate"]
 ENTRYPOINT gunicorn bot_project.wsgi:application -b 0.0.0.0:8000 --timeout 5 --capture-output --log-level debug
 
 
