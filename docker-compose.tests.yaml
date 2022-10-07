@@ -20,7 +20,12 @@ services:
     build:
       target: tests
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@test-db:5432/votebot
+      - DATABASE_URL=postgres://postgres:postgres@test-db:5432/test-votebot
+      - SLACK_VERIFICATION_TOKEN
+      - SECRET_KEY
+      - SIGNING_SECRET
+      - SLACK_BOT_TOKEN
+      - ENABLE_SCHEDULER
     depends_on:
       test-db:
         condition: service_healthy
