@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  db:
+    container_name: production-votebot-database
+    image: postgres:14.4-bullseye
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-u", "postgres"]
+      interval: 5s
+      timeout: 30s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - production-votebot-database:/var/lib/postgresql/data
+    networks:
+      - production-votebot-network
+  app:
+    container_name: production-votebot-app
+    image: production-votebot-app:${COMMIT_ID:-latest}
+    build:
+      target: production
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - production-votebot-network
+  nginx:
+    container_name: production-votebot-nginx
+    image: production-votebot-nginx:${COMMIT_ID:-latest}
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile_production
+    volumes:
+      - ./static:/var/www/static
+    ports:
+      - "9000:80"
+    depends_on:
+      - app
+    networks:
+      - production-votebot-network
+
+volumes:
+  production-votebot-database:
+networks:
+  production-votebot-network:
