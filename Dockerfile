@@ -33,8 +33,7 @@ FROM build AS production
 
 RUN chown lime:lime -R /votebot 
 USER lime
-CMD ["./manage.py makemigrations", "./manage.py migrate"]
-ENTRYPOINT gunicorn bot_project.wsgi:application -b 0.0.0.0:8000 --timeout 5 --capture-output --log-level debug
+ENTRYPOINT ["/bin/sh", "-c", "./manage.py makemigrations && ./manage.py migrate && gunicorn bot_project.wsgi:application -b 0.0.0.0:8000 --timeout 5 --capture-output --log-level debug"]
 
 
 FROM build AS tests
@@ -45,6 +44,4 @@ COPY tests ./tests
 RUN pip install -r requirements.txt --no-cache-dir
 RUN chown lime:lime -R /votebot 
 USER lime
-CMD ["./manage.py makemigrations", "./manage.py migrate"]
-
-ENTRYPOINT coverage run --source='./bot_app' manage.py test --verbosity=3 && coverage report -m
+ENTRYPOINT ["/bin/sh", "-c", "./manage.py makemigrations && ./manage.py migrate && coverage run --source='./bot_app' manage.py test --verbosity=3 && coverage report -m"]
