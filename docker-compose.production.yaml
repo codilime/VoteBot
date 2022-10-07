@@ -30,7 +30,7 @@ services:
     image: production-votebot-nginx:${COMMIT_ID:-latest}
     build:
       context: .
-      dockerfile: nginx/Dockerfile_production
+      dockerfile: nginx/Dockerfile
     volumes:
       - ./static:/var/www/static
     ports:
