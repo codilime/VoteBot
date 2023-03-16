@@ -21,6 +21,7 @@ def get_sent_vote_modal(
             "id": voting_user,
         },
         "view": {
+            "blocks": [],
             "state": {
                 "values": {
                     "select_user": {
@@ -53,6 +54,9 @@ def get_sent_vote_modal(
                             }
                         }
                     },
+                    "comment": {
+                        "comment-action": {"value": "a comment"}
+                    }
                 }
             },
         },

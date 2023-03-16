@@ -17,8 +17,8 @@ class BaseTestCase(TestCase):
         apps.get_app_config(BotAppConfig.name).slack_client._client = self.slack_client_mock
 
     def _add_simple_test_data(self, add_voting: bool = True) -> None:
-        self.slack_user1 = SlackUser.objects.create(slack_id="slack_user1_id", name="test.user.1")
-        self.slack_user2 = SlackUser.objects.create(slack_id="slack_user2_id", name="test.user.2")
+        self.slack_user1 = SlackUser.objects.create(slack_id="slack_user1_id", name="test.user.1", real_name="test.user.1")
+        self.slack_user2 = SlackUser.objects.create(slack_id="slack_user2_id", name="test.user.2", real_name="test.user.2")
 
         if add_voting:
             self.voting_result = Vote.objects.create(

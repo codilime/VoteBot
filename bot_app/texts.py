@@ -77,7 +77,7 @@ class TextsBuilder:
             else:
                 result.append(line.format(**line_values))
 
-        lines = '\n\n'.join(result)
+        lines = '\n'.join(result)
         return f'{header}\n{lines}'
 
     def you_have_not_voted(self) -> str:
@@ -85,6 +85,18 @@ class TextsBuilder:
 
     def no_permissions(self) -> str:
         return self._sources['no_permissions']
+
+    def user_comments(self, user: str, comments: dict) -> str:
+        header = self._sources['user_comments'].format(user=user)
+        lines = [f'• {user}: {comment}' for user, comment in comments.items()]
+        lines = '\n'.join(lines)
+        return f'{header}\n{lines}'
+
+    def top5(self, category: str, users_points: list[tuple[str, int]]) -> str:
+        header = self._sources['top5_header'].format(category=category)
+        lines = [self._sources['top5_line'].format(user=user, points=points) for user, points in users_points]
+        lines = '\n'.join(lines)
+        return f'{header}\n{lines}'
 
 
 texts = TextsBuilder(sources=TextsSources())
