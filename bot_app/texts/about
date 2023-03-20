@@ -1,8 +1,7 @@
-Program wyróżnień CodiStars to nagrody dla osób, które w szczególny sposób wyróżniają się w firmie.
-Możesz oddać głosy w ramach 3 naszych wartości: Team up to win, Act to Deliver oraz Disrupt to Grow.
-
-Aby oddać głos na daną osobę, w dowolnym momencie użyj na Slacku komendy /vote. W oknie pojawi Ci się formularz do uzupełnienia. Wybierz osobę, którą chcesz nominować z rozwijanej listy, a następnie przydziel jej punkty w ramach wartości. 
-
-Pamiętaj, że musisz rozdysponować wszystkie 3 punkty oraz nie możesz głosować na siebie! W miesiącu masz nielimitowaną pulę głosów, ale nie możesz zagłosować na jedną osobę więcej niż jeden raz - oddanie drugi raz głosu na tę samą osobę będzie równoznaczne ze skasowaniem poprzedniego głosu. Od 1. dnia miesiąca pula resetuje się. Wyniki głosowania poznamy na styczniowym spotkaniu komunikacyjnym.
-
-Więcej informacji znajdziesz na Confluence.
+The CodiStars Honors Program rewards Limes who stand out in a special way within the company. You can appreciate any Lime by awarding them three points in three categories reflecting our values: 
+• Team up to win
+• Act to deliver
+• Disrupt to grow.
+To vote for someone, use the */vote* command on Slack at any time. A form will appear for you to complete. Select the person you want to nominate from the drop-down list, and then allocate points within the value.
+Remember - you must allocate all three points and you cannot vote for yourself! You have an unlimited pool of votes per month, but you can't vote for the same person more than once - a second vote for the same person will be equivalent to deleting the first one. As of the first day of the month, the pool resets. 
+The winners will be announced at the July communication meeting. For more information, visit Confluence.

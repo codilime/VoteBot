@@ -59,12 +59,12 @@ class TestSchedulerJobs(BaseTestCase):
         assert all([text in c["text"] for c in calls])
 
     def test_announce_winners(self) -> None:
-        winners_text = f"""Wyniki głosowania w programie wyróżnień:
-• w kategorii Team up to win remis - 0 punktów: test.user.1, test.user.2, hr.user.1
-• w kategorii Act to deliver mając {self.voting_result.points_act_to_deliver} punktów wygrywa {self.slack_user2.name}
-• w kategorii Disrupt to grow mając {self.voting_result.points_disrupt_to_grow} punktów wygrywa {self.slack_user2.name}"""
+        winners_text = f"""Results of voting in the Honors Program:
+• in category Team up to win tie - 0 points: test.user.1, test.user.2, hr.user.1
+• in category Act to deliver with {self.voting_result.points_act_to_deliver} points, {self.slack_user2.name} wins
+• in category Disrupt to grow with {self.voting_result.points_disrupt_to_grow} points, {self.slack_user2.name} wins"""
 
-        hr_user1 = SlackUser.objects.create(slack_id="hr_user1_id", name="hr.user.1", is_hr=True)
+        hr_user1 = SlackUser.objects.create(slack_id="hr_user1_id", name="hr.user.1", real_name="hr.user.1", is_hr=True)
         announce_winners()
         assert self.slack_client_mock.chat_postMessage.call_count == 1
 
@@ -95,10 +95,10 @@ class TestSchedulerJobs(BaseTestCase):
         assert announcer.call_count == 1
 
     def test_new_points_notification(self) -> None:
-        got_voted_text = f"""{Vote.objects.count()} osób zagłosowało dzisiaj na Ciebie! Sumarycznie przyznali Ci:
-• {self.voting_result.points_team_up_to_win} punktów w kategorii Team up to win
-• {self.voting_result.points_act_to_deliver} punktów w kategorii Act to deliver
-• {self.voting_result.points_disrupt_to_grow} punktów w kategorii Disrupt to grow"""
+        got_voted_text = f"""{Vote.objects.count()} people voted for you today!
+• {self.voting_result.points_team_up_to_win} points in the category Team up to win
+• {self.voting_result.points_act_to_deliver} points in the category Act to deliver
+• {self.voting_result.points_disrupt_to_grow} points in the category Disrupt to grow"""
 
         notify_about_new_points()
         assert (

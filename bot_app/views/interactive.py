@@ -1,19 +1,18 @@
 import json
-import logging
 
 from django.http import HttpResponse, JsonResponse
 from django.http import HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from bot_app.utils import get_slack_client, get_start_end_half_year
-from bot_app.slack.client import SlackClient
-from bot_app.message import build_text_message
 from bot_app.hmac import verify_request
+from bot_app.message import build_text_message
+from bot_app.modals.get_comments import check_comments_header
 from bot_app.models import SlackUser, CATEGORIES, Vote
+from bot_app.texts import texts
+from bot_app.utils import get_slack_client, get_start_end_half_year
 from bot_app.utils import save_vote
 from bot_app.views.slash import logger
-from bot_app.modals.get_comments import check_comments_header
 
 
 @csrf_exempt
@@ -37,13 +36,13 @@ def interactive(request):
         selected_user = SlackUser.objects.get(slack_id=selected_user_slack_id)
 
         start, end = get_start_end_half_year()
-        comments_authors = [(vote.comment, vote.voting_user.real_name)
-                            for vote in Vote.objects.filter(voted_user=selected_user, created__range=(start, end))]
-        # TODO: use the texts module
-        comments_message_header = f"Komentarze dane użytkownikowi {selected_user.real_name} w tym półroczu:"
-        comment_list = '\n\n'.join([f"• {author}: {comment}" for comment, author in comments_authors])
+        comments = {
+            vote.voting_user.real_name: vote.comment
+            for vote in Vote.objects.filter(voted_user=selected_user, created__range=(start, end))
+        }
+        user_comments = texts.user_comments(user=selected_user.real_name, comments=comments)
 
-        message = build_text_message(channel=data["user"]["id"], content=[comments_message_header, comment_list])
+        message = build_text_message(channel=data["user"]["id"], content=[user_comments])
         client = get_slack_client()
         client.post_chat_message(message, text="Information about awards program.")
     else:
