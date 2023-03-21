@@ -158,26 +158,13 @@ def get_top5_message(start: datetime, end: datetime) -> str:
         each_categories_top5[category] = ordered_users[0:5]
 
     # Translate slack user ID's into verbose slack usernames
+    messages = []
     for category, top5 in each_categories_top5.items():
-        for index, user_w_points in enumerate(top5):
-            user_real_name = SlackUser.objects.get(slack_id=user_w_points[0]).name
-            each_categories_top5[category][index][0] = user_real_name
+        users_points = [(SlackUser.objects.get(name=user).real_name, points) for user, points in top5]
+        category_top5_text = texts.top5(category=category, users_points=users_points)
+        messages.append(category_top5_text)
 
-    # Generate top5 message. TODO: use the texts module
-    top5_texts = {
-        CATEGORIES[category]: '\n'.join([f" • {SlackUser.objects.get(name=user).real_name} z {points} punktami\n" for user, points in top5])
-        for category, top5 in each_categories_top5.items()
-    }
-
-    message = "\n".join([f"\n\nTop 5 limonek w kategorii {category} w tym półroczu:\n{top5}"
-                         for category, top5 in top5_texts.items()])
-
-    # On second thought the texts module might simply overcomplicate things, e.g. see how in the two lines above a
-    # complex message is multiplied for each category. Separating this in two files might be unintuitive and confusing.
-    # There seems to be no good solution to simplify this for an end user and perhaps it's better to let the developers
-    # edit this directly according to HR's requests. The scarce amount of text in almost all responses hardly justifies
-    # using separate text files.
-
+    message = '\n'.join(messages)
     return message
 
 

@@ -53,10 +53,10 @@ class TestSlashCommands(BaseTestCase):
         # TODO validate view?
 
     def test_check_votes(self) -> None:
-        your_votes_text = f"""Użytkownikowi {self.slack_user2.name} przyznano:
-• {self.voting_result.points_team_up_to_win} punktów w kategorii Team up to win
-• {self.voting_result.points_act_to_deliver} punktów w kategorii Act to deliver
-• {self.voting_result.points_disrupt_to_grow} punktów w kategorii Disrupt to grow"""
+        your_votes_text = f"""You voted for user {self.slack_user2.name} by awarding them:
+• {self.voting_result.points_team_up_to_win} points in the category Team up to win
+• {self.voting_result.points_act_to_deliver} points in the category Act to deliver
+• {self.voting_result.points_disrupt_to_grow} points in the category Disrupt to grow"""
         command = "/check-votes"
         data = get_slash_command_data(command=command,  user_id=self.slack_user1.slack_id)
 
@@ -70,9 +70,9 @@ class TestSlashCommands(BaseTestCase):
         assert call_args['blocks'][1]['text']['text'] == your_votes_text
 
     def test_check_points(self) -> None:
-        your_points_text = f"""• masz {self.voting_result.points_team_up_to_win} punktów w kategorii Team up to win
-• masz {self.voting_result.points_act_to_deliver} punktów w kategorii Act to deliver
-• masz {self.voting_result.points_disrupt_to_grow} punktów w kategorii Disrupt to grow"""
+        your_points_text = f"""You have {self.voting_result.points_team_up_to_win} points in the Team up to win category. Congratulations!
+You have {self.voting_result.points_act_to_deliver} points in the Act to deliver category. Congratulations!
+You have {self.voting_result.points_disrupt_to_grow} points in the Disrupt to grow category. Congratulations!"""
         command = "/check-points"
         data = get_slash_command_data(command=command,  user_id=self.slack_user2.slack_id)
 
@@ -82,18 +82,18 @@ class TestSlashCommands(BaseTestCase):
         self.slack_client_mock.chat_postMessage.assert_called_once()
         call_args = self.slack_client_mock.chat_postMessage.call_args[1]
         assert call_args["channel"] == self.slack_user2.slack_id
-        assert self.slack_user1.real_name.split(' ')[0] in str(call_args['blocks'][0])
+        assert self.slack_user2.real_name in str(call_args['blocks'][0])
 
         msg = call_args['blocks'][1]['text']['text']
         assert msg == your_points_text
 
     def test_check_winners(self) -> None:
-        winners_text = f"""Wyniki głosowania w programie wyróżnień:
-• w kategorii Team up to win remis - 0 punktów: test.user.1, test.user.2, hr.user.1
-• w kategorii Act to deliver mając {self.voting_result.points_act_to_deliver} punktów wygrywa {self.slack_user2.name}
-• w kategorii Disrupt to grow mając {self.voting_result.points_disrupt_to_grow} punktów wygrywa {self.slack_user2.name}"""
+        winners_text = f"""Results of voting in the Honors Program:
+• in category Team up to win tie - 0 points: test.user.1, test.user.2, hr.user.1
+• in category Act to deliver with {self.voting_result.points_act_to_deliver} points, {self.slack_user2.name} wins
+• in category Disrupt to grow with {self.voting_result.points_disrupt_to_grow} points, {self.slack_user2.name} wins"""
 
-        hr_user1 = SlackUser.objects.create(slack_id="hr_user1_id", name="hr.user.1", is_hr=True)
+        hr_user1 = SlackUser.objects.create(slack_id="hr_user1_id", name="hr.user.1", real_name="hr.user.1", is_hr=True)
         command = "/check-winners"
         data = get_slash_command_data(command=command,  user_id=hr_user1.slack_id)
 
