@@ -34,7 +34,7 @@ FROM build AS production
 RUN chown lime:lime -R /votebot
 RUN chmod u+x manage.py
 USER lime
-ENTRYPOINT ["/bin/sh", "-c", "./manage.py makemigrations && ./manage.py migrate && gunicorn bot_project.wsgi:application -b 0.0.0.0:8000 --timeout 5 --capture-output --log-level debug"]
+ENTRYPOINT ["/bin/sh", "-c", "./manage.py makemigrations && ./manage.py migrate && gunicorn bot_project.wsgi:application -b 0.0.0.0:8000 --timeout 10 --workers 3 --capture-output --log-level debug"]
 
 
 FROM build AS tests
