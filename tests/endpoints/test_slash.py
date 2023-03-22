@@ -89,20 +89,19 @@ You have {self.voting_result.points_disrupt_to_grow} points in the Disrupt to gr
 
     def test_check_winners(self) -> None:
         winners_text = f"""Results of voting in the Honors Program:
-• in category Team up to win tie - 0 points: test.user.1, test.user.2, hr.user.1
-• in category Act to deliver with {self.voting_result.points_act_to_deliver} points, {self.slack_user2.name} wins
-• in category Disrupt to grow with {self.voting_result.points_disrupt_to_grow} points, {self.slack_user2.name} wins"""
+• in category Team up to win with 2 points, {self.hr_user1.name} wins
+• in category Act to deliver with 1 points, {self.slack_user2.name} wins
+• in category Disrupt to grow with 2 points, {self.slack_user2.name} wins"""
 
-        hr_user1 = SlackUser.objects.create(slack_id="hr_user1_id", name="hr.user.1", real_name="hr.user.1", is_hr=True)
         command = "/check-winners"
-        data = get_slash_command_data(command=command,  user_id=hr_user1.slack_id)
+        data = get_slash_command_data(command=command,  user_id=self.hr_user1.slack_id)
 
         response = self._post_command(command=command, data=data)
         assert response.status_code == 200
 
         self.slack_client_mock.chat_postMessage.assert_called_once()
         call_args = self.slack_client_mock.chat_postMessage.call_args[1]
-        assert call_args["channel"] == hr_user1.slack_id
+        assert call_args["channel"] == self.hr_user1.slack_id
 
         msg = call_args['blocks'][1]['text']['text']
         assert msg == winners_text
@@ -118,6 +117,32 @@ You have {self.voting_result.points_disrupt_to_grow} points in the Disrupt to gr
         self.slack_client_mock.chat_postMessage.assert_called_once()
         call_args = self.slack_client_mock.chat_postMessage.call_args[1]
         assert call_args["channel"] == self.slack_user1.slack_id
+
+        msg = call_args['blocks'][1]['text']['text']
+        assert msg == text
+
+    def test_top5(self) -> None:
+        text = f"""Top 5 Limes in category points_team_up_to_win in a current half of year:
+• {self.hr_user1.name} with 2 points
+• {self.slack_user1.name} with 0 points
+• {self.slack_user2.name} with 0 points
+Top 5 Limes in category points_act_to_deliver in a current half of year:
+• {self.slack_user2.name} with 1 points
+• {self.slack_user1.name} with 0 points
+• {self.hr_user1.name} with 0 points
+Top 5 Limes in category points_disrupt_to_grow in a current half of year:
+• {self.slack_user2.name} with 2 points
+• {self.hr_user1.name} with 1 points
+• {self.slack_user1.name} with 0 points"""
+        command = "/check-top5"
+        data = get_slash_command_data(command=command, user_id=self.hr_user1.slack_id)
+
+        response = self._post_command(command=command, data=data)
+        assert response.status_code == 200
+
+        self.slack_client_mock.chat_postMessage.assert_called_once()
+        call_args = self.slack_client_mock.chat_postMessage.call_args[1]
+        assert call_args["channel"] == self.hr_user1.slack_id
 
         msg = call_args['blocks'][1]['text']['text']
         assert msg == text

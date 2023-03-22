@@ -19,8 +19,16 @@ class BaseTestCase(TestCase):
     def _add_simple_test_data(self, add_voting: bool = True) -> None:
         self.slack_user1 = SlackUser.objects.create(slack_id="slack_user1_id", name="test.user.1", real_name="test.user.1")
         self.slack_user2 = SlackUser.objects.create(slack_id="slack_user2_id", name="test.user.2", real_name="test.user.2")
+        self.hr_user1 = SlackUser.objects.create(slack_id="hr_user1_id", name="hr.user.1", real_name="hr.user.1", is_hr=True)
 
         if add_voting:
+            Vote.objects.create(
+                voted_user=self.hr_user1,
+                voting_user=self.slack_user2,
+                points_team_up_to_win=2,
+                points_act_to_deliver=0,
+                points_disrupt_to_grow=1,
+            )
             self.voting_result = Vote.objects.create(
                 voted_user=self.slack_user2,
                 voting_user=self.slack_user1,

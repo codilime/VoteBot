@@ -70,10 +70,15 @@ def interactive(request):
 
         try:
             user = SlackUser.objects.get(slack_id=data["user"]["id"])
-        except ValueError:
+        except (SlackUser.DoesNotExist, ValueError):
             msg = 'Voting user does not exist.'
             logger.warning(msg)
-            return HttpResponseBadRequest(msg)
+
+            response = {
+                "response_action": "errors",
+                "errors": {'select_user': "Voting user does not exist."}
+            }
+            return JsonResponse(response)
         except KeyError as e:
             logger.warning(e)
             return HttpResponseBadRequest(f'Invalid view data: {e}')
@@ -83,7 +88,12 @@ def interactive(request):
         except SlackUser.DoesNotExist:
             msg = 'Voted user does not exist.'
             logger.warning(msg)
-            return HttpResponseBadRequest(msg)
+
+            response = {
+                "response_action": "errors",
+                "errors": {'select_user': "Voted user does not exist."}
+            }
+            return JsonResponse(response)
 
         # Validate vote.
         errors = {}

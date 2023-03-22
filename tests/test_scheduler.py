@@ -60,16 +60,15 @@ class TestSchedulerJobs(BaseTestCase):
 
     def test_announce_winners(self) -> None:
         winners_text = f"""Results of voting in the Honors Program:
-• in category Team up to win tie - 0 points: test.user.1, test.user.2, hr.user.1
-• in category Act to deliver with {self.voting_result.points_act_to_deliver} points, {self.slack_user2.name} wins
-• in category Disrupt to grow with {self.voting_result.points_disrupt_to_grow} points, {self.slack_user2.name} wins"""
+• in category Team up to win with 2 points, {self.hr_user1.name} wins
+• in category Act to deliver with 1 points, {self.slack_user2.name} wins
+• in category Disrupt to grow with 2 points, {self.slack_user2.name} wins"""
 
-        hr_user1 = SlackUser.objects.create(slack_id="hr_user1_id", name="hr.user.1", real_name="hr.user.1", is_hr=True)
         announce_winners()
         assert self.slack_client_mock.chat_postMessage.call_count == 1
 
         call = self.slack_client_mock.chat_postMessage.call_args[1]
-        assert call["channel"] == hr_user1.slack_id
+        assert call["channel"] == self.hr_user1.slack_id
         assert call["text"] == winners_text
 
     @mock.patch("bot_app.scheduler.jobs.announce_winners")
@@ -95,7 +94,7 @@ class TestSchedulerJobs(BaseTestCase):
         assert announcer.call_count == 1
 
     def test_new_points_notification(self) -> None:
-        got_voted_text = f"""{Vote.objects.count()} people voted for you today!
+        got_voted_text = f"""1 people voted for you today!
 • {self.voting_result.points_team_up_to_win} points in the category Team up to win
 • {self.voting_result.points_act_to_deliver} points in the category Act to deliver
 • {self.voting_result.points_disrupt_to_grow} points in the category Disrupt to grow"""
