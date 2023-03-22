@@ -144,6 +144,8 @@ class TestInteractiveEndpoint(BaseTestCase):
             ((1, 0, 0), 'slack_user1_id', 'slack_user2_id', 'exactly 3 points'),
             ((0, 1, 2), 'slack_user1_id', 'slack_user1_id', 'cannot vote for yourself'),
             ((0, 1, 2), 'slack_user1_id', 'bot_user_id', 'cannot vote for bots'),
+            ((0, 1, 2), 'slack_user1_id', 'not_existing_user_id', 'Voted user does not exist.'),
+            ((0, 1, 2), 'not_existing_user_id', 'slack_user2_id', 'Voting user does not exist.'),
     ))
     def test_invalid_vote(self, points: list[int], voter: str, voted: str, error_message) -> None:
         vote_modal = get_sent_vote_modal(
