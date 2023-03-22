@@ -132,35 +132,20 @@ def get_top5_message(start: datetime, end: datetime) -> str:
     @return: message contain information about the top 5 performers in each category
     """
     users_points = total_points(start=start, end=end)
+    for user, data in users_points.items():
+        data['user'] = user
 
-    # Find top5 and their points for each category.
-    each_categories_top5 = {}
+    # Get top5 for each category
+    each_categories_top5 = {}.fromkeys(CATEGORIES.keys())
     for category in CATEGORIES.keys():
-
-        ordered_users = []
-        for user, values in users_points.items():
-            category_points = values[category]
-            # If there are no users in the list yet, append a user
-            if len(ordered_users) == 0:
-                ordered_users.append([user, category_points])
-                continue
-            # Otherwise, if current user's category points exceed or equal that of any other user in a given user/points
-            # pair in the ordered_users list, insert current user ( w category points, in a list ) on that user/points
-            # pair's index in the list.
-            for i in range(0, len(ordered_users)):
-                if category_points >= ordered_users[i][1]:
-                    ordered_users.insert(i, [user, category_points])
-                    break
-                elif len(ordered_users) < 5:
-                    ordered_users.append([user, category_points])
-
-        # Under the category name key assign user/points pairs of top5 users in the given category to the category
-        each_categories_top5[category] = ordered_users[0:5]
+        sorted_points = sorted(users_points.values(), key=lambda points: points[category], reverse=True)
+        top5 = sorted_points[:5]
+        each_categories_top5[category] = [(data['user'], data[category]) for data in top5]
 
     # Translate slack user ID's into verbose slack usernames
     messages = []
     for category, top5 in each_categories_top5.items():
-        users_points = [(SlackUser.objects.get(name=user).real_name, points) for user, points in top5]
+        users_points = [(SlackUser.objects.get(slack_id=user).real_name, points) for user, points in top5]
         category_top5_text = texts.top5(category=category, users_points=users_points)
         messages.append(category_top5_text)
 
