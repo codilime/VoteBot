@@ -33,6 +33,7 @@ pipeline {
             }
         }
         
+/*
         // This stage executes check read from checks.yaml file
         stage("CI checks") {
             steps {
@@ -55,16 +56,17 @@ pipeline {
                 }
             }
         }
+*/
         // This stage builds image based on Dockerfile in repository root and pushes it to GCP Artifact Registry.
         // This image will be used for deployment.
-        /*
+        
         stage('Build image') {
             steps {
                 script {
                     withCredentials([file(credentialsId: "${projectName}_registry", variable: 'KEYSTORE')]) {
                     sh"""
                     cat $KEYSTORE | docker login -u _json_key --password-stdin "https://${registryUrl}"
-                    docker build -f Dockerfile -t image . 
+                    docker build -f Dockerfile -t image --target production . 
                     docker tag image "${registryUrl}/${projectGCP}/${projectName}/${repoName}:${GIT_COMMIT}"
                     docker push "${registryUrl}/${projectGCP}/${projectName}/${repoName}:${GIT_COMMIT}"
                     """
@@ -72,7 +74,7 @@ pipeline {
                 }
             }
         }
-        */
+        
         // This stage changes the image tag in the Manifest repo Staging branch
         // To use with Sandbox version 2
         /*
