@@ -37,7 +37,7 @@ pipeline {
         stage("CI checks") {
             steps {
                 script {
-                    def checks = get_checks(checks_file)
+                    def checks = get_checks('checks.yaml')
                     if (checks) {
                         for (int i = 0; i < checks.size(); i++) {
                             stage(checks[i].name) {
