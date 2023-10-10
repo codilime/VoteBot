@@ -7,7 +7,5 @@
 
 # Example checks list:
 checks:
-  - name: "Test check"
-    command: "echo test"
-  - name: "List env"
-    command: "env"
+  - name: "Django test"
+    command: "python manage.py test"

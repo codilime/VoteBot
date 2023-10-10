@@ -23,20 +23,17 @@ pipeline {
     stages {
         // This stage is advised to guarantee that all requirements for ci checks are satisfied.
         // All CI checks will be executed inside that image.
-        /*
         stage('Create CI image') {
             steps {
                 script {
                     env.GIT_COMMIT = sh(script: "git log -1 --pretty=format:%h", returnStdout: true).trim()
                     // Choose approach that fits you better. Separate dockerfile or target for multistage dockerfiles.
-                    //docker.build("${projectName}:${GIT_COMMIT}", "-f Dockerfile-test .")
-                    //docker.build("${projectName}:${GIT_COMMIT}", "--target testing .")
+                    docker.build("${projectName}:${GIT_COMMIT}", "--target tests .")
                 }
             }
         }
-        */
+        
         // This stage executes check read from checks.yaml file
-        /*
         stage("CI checks") {
             steps {
                 script {
@@ -45,7 +42,7 @@ pipeline {
                         for (int i = 0; i < checks.size(); i++) {
                             stage(checks[i].name) {
                                 // If you decided not to build docker image, you should remove docker.image().inside(){} wrapper
-                                docker.image("${projectName}:${GIT_COMMIT}").inside("""--entrypoint=''""") {
+                                docker.image("${projectName}:${GIT_COMMIT}").inside("""--entrypoint='/bin/bash'""") {
                                     runWithStatus(checks[i].name, env.GIT_URL, "${projectName}_gitToken") {
                                         sh """#!/bin/bash
                                         |${checks[i].command}""".stripMargin()
@@ -57,7 +54,6 @@ pipeline {
                 }
             }
         }
-        */
         // This stage builds image based on Dockerfile in repository root and pushes it to GCP Artifact Registry.
         // This image will be used for deployment.
         /*
