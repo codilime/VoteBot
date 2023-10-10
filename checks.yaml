@@ -1,0 +1,13 @@
+# In this file you can define checks list.
+# Each entry is small dictionary with name of check (it will be used to post status to MR/PR)
+# and shell command to be executed as a check. If exit code of command is non-zero, then check will fail.
+
+# By default this file should be placed in root of repository.
+# This behaviour can be changed in Jenkinsfile file.
+
+# Example checks list:
+checks:
+  - name: "Test check"
+    command: "echo test"
+  - name: "List env"
+    command: "env"
