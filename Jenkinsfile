@@ -37,12 +37,13 @@ pipeline {
         stage("CI checks") {
             steps {
                 script {
-                    def checks = get_checks('checks.yaml')
+                    def checks = readYaml file:'checks.yaml'
+                    checks = checks['checks']
                     if (checks) {
                         for (int i = 0; i < checks.size(); i++) {
                             stage(checks[i].name) {
                                 // If you decided not to build docker image, you should remove docker.image().inside(){} wrapper
-                                docker.image("${projectName}:${GIT_COMMIT}").inside("""--entrypoint='/bin/bash'""") {
+                                docker.image("${projectName}:${GIT_COMMIT}").inside("""--entrypoint=''""") {
                                     runWithStatus(checks[i].name, env.GIT_URL, "${projectName}_gitToken") {
                                         sh """#!/bin/bash
                                         |${checks[i].command}""".stripMargin()
