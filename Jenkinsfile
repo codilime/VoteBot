@@ -88,7 +88,7 @@ pipeline {
                 cleanWs()
                 script {
                     reponame = getRepoName(chartRepo)
-                    withCredentials([usernamePassword(credentialsId: "${projectName}_gitManifestToken", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                    withCredentials([usernamePassword(credentialsId: "${projectName}_manifestGitToken", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
                         sh """
                         #!/bin/bash -e
                         clean_url=`echo $chartRepo |sed "s%https\\?:\\/\\/\\|git@%%"`
