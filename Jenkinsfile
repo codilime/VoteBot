@@ -66,9 +66,15 @@ pipeline {
                     withCredentials([file(credentialsId: "${projectName}_registry", variable: 'KEYSTORE')]) {
                     sh"""
                     cat $KEYSTORE | docker login -u _json_key --password-stdin "https://${registryUrl}"
+
                     docker build -f Dockerfile -t image --target production . 
-                    docker tag image "${registryUrl}/${projectGCP}/${projectName}/${repoName}:${GIT_COMMIT}"
-                    docker push "${registryUrl}/${projectGCP}/${projectName}/${repoName}:${GIT_COMMIT}"
+                    docker tag image "${registryUrl}/${projectGCP}/${projectName}/votebot:${GIT_COMMIT}"
+
+                    docker build -f nginx/Dockerfile -t image .
+                    docker tag image "${registryUrl}/${projectGCP}/${projectName}/proxy:${GIT_COMMIT}"
+
+                    docker push "${registryUrl}/${projectGCP}/${projectName}/votebot:${GIT_COMMIT}"
+                    docker push "${registryUrl}/${projectGCP}/${projectName}/proxy:${GIT_COMMIT}"
                     """
                     }
                 }
