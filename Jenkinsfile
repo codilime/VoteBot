@@ -83,7 +83,6 @@ pipeline {
         
         // This stage changes the image tag in the Manifest repo Staging branch
         // To use with Sandbox version 2
-        /*
         stage("Change tag in the project Manifest repo Staging branch") {
             steps {
                 cleanWs()
@@ -97,7 +96,8 @@ pipeline {
                         cd ${reponame}
                         git config --global user.email "sanbox-inku-k8s@codilime.com"
                         git config --global user.name "SandBox"
-                        yq -i '.deployments.deployment-DEPLOYMENT_NAME.image.tag = "${GIT_COMMIT}"' values.yaml ## change DEPLOYMENT_NAME to correct name
+                        yq -i '.deployments.deployment-votebot.image.tag = "${GIT_COMMIT}"' values.yaml
+                        yq -i '.deployments.deployment-proxy.image.tag = "${GIT_COMMIT}"' values.yaml
                         git commit -am 'updating image TAG ${GIT_COMMIT}'
                         cd ${reponame} && git push --set-upstream origin ${chartStagingBranch} -o merge_request.create -o merge_request.description="Merging Staging Branch."
                         """
@@ -105,7 +105,7 @@ pipeline {
                 }
             }
         }
-        */
+        
         // This stage executes end-to-end checks defined by Developers
         /*
         stage('E2E Checks') {
