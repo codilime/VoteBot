@@ -24,10 +24,7 @@ RUN pip install -r requirements.txt --no-cache-dir && \
     adduser lime && \
     chown -R lime /votebot
 
-COPY bot_app ./bot_app
-COPY bot_project ./bot_project
-COPY manage.py ./
-
+COPY bot_app bot_project manage.py ./
 
 FROM build AS production
 
