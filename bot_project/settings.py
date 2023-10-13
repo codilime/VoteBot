@@ -20,7 +20,7 @@ DEBUG = os.environ.get("DEBUG") == "1" or False
 
 VERSION = '1.0.0'
 ALLOWED_HOSTS = ['*']   # TODO not suitable for production. for some reason supplying the domain does not seem to work
-CSRF_TRUSTED_ORIGINS = ['https://slack-incubator.codilime.com', 'https://slack-incubator.codilime.com/', 'http://10.5.88.201:8080']  # TODO add testing and prod hosts
+CSRF_TRUSTED_ORIGINS = ['https://votebot.codilime.com', 'https://slack-incubator.codilime.com', 'https://slack-incubator.codilime.com/', 'http://10.5.88.201:8080']  # TODO add testing and prod hosts
 
 INSTALLED_APPS = [
     'grappelli',
