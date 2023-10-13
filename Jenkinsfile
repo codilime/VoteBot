@@ -99,7 +99,7 @@ pipeline {
                         yq -i '.deployments.deployment-votebot.image.tag = "${GIT_COMMIT}"' values.yaml
                         yq -i '.deployments.deployment-proxy.image.tag = "${GIT_COMMIT}"' values.yaml
                         git commit -am 'updating image TAG ${GIT_COMMIT}'
-                        git push --set-upstream origin ${chartStagingBranch} -o merge_request.create -o merge_request.description="Merging Staging Branch." -o merge_request.source_branch=${chartStagingBranch} -omerge_request.target_branch=${chartProdBranch} -o merge_request.remove_source_branch = false
+                        git push --set-upstream origin ${chartStagingBranch} -o merge_request.create -o merge_request.description="Merging Staging Branch." -omerge_request.target=${chartProdBranch} -o merge_request.remove_source_branch=false
                         """
                     }
                 }
