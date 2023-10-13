@@ -28,7 +28,6 @@ COPY bot_app ./bot_app
 COPY bot_project ./bot_project
 COPY manage.py ./
 
-
 FROM build AS production
 
 RUN chown lime:lime -R /votebot
